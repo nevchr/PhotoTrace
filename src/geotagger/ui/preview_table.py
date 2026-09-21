@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor
 from PySide6.QtWidgets import (
@@ -21,7 +23,7 @@ class PreviewTable(QTableWidget):
             [
                 "Photo",
                 "Photo Time",
-                "Adjusted Time",
+                "Adjusted Camera Time",
                 "Latitude",
                 "Longitude",
                 "Elevation",
@@ -66,6 +68,7 @@ class PreviewTable(QTableWidget):
     def set_results(
         self,
         results: list[PreviewResult],
+        display_offset: timedelta = timedelta(),
     ):
         self.setRowCount(len(results))
 
@@ -76,9 +79,9 @@ class PreviewTable(QTableWidget):
                 else "—"
             )
 
-            adjusted_time = (
-                result.adjusted_time.strftime("%H:%M:%S")
-                if result.adjusted_time
+            adjusted_camera_time = (
+                (result.photo_time + display_offset).strftime("%H:%M:%S")
+                if result.photo_time
                 else "—"
             )
 
@@ -109,7 +112,7 @@ class PreviewTable(QTableWidget):
             values = [
                 result.source_path.name,
                 photo_time,
-                adjusted_time,
+                adjusted_camera_time,
                 latitude,
                 longitude,
                 elevation,

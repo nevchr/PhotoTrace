@@ -16,7 +16,7 @@
       <Dialog Id="TrailTagWelcome" Width="370" Height="235" Title="TrailTag Setup">
         <Control Id="Title" Type="Text" X="22" Y="22" Width="325" Height="30" Transparent="yes" Text="{\TrailTagHeading}Welcome to TrailTag" />
         <Control Id="Intro" Type="Text" X="22" Y="67" Width="320" Height="36" Text="Give your photos a place on the map. This will install TrailTag [ProductVersion] on this computer." />
-        <Control Id="Location" Type="Text" X="22" Y="116" Width="320" Height="35" Text="TrailTag will be available from the Start menu. Your photos and saved trips are kept separately from the app." />
+        <Control Id="Location" Type="Text" X="22" Y="116" Width="320" Height="35" Text="TrailTag will add Start menu and desktop shortcuts. Your photos and saved outings are kept separately from the app." />
         <Control Id="Line" Type="Line" X="0" Y="187" Width="370" Height="1" />
         <Control Id="Install" Type="PushButton" X="204" Y="203" Width="70" Height="20" Default="yes" Text="&amp;Install">
           <Publish Event="EndDialog" Value="Return" />
@@ -28,7 +28,7 @@
 
       <Dialog Id="TrailTagMaintenance" Width="370" Height="235" Title="TrailTag Setup">
         <Control Id="Title" Type="Text" X="22" Y="22" Width="325" Height="30" Transparent="yes" Text="{\TrailTagHeading}Manage TrailTag" />
-        <Control Id="Intro" Type="Text" X="22" Y="65" Width="320" Height="30" Text="Repair the app files or remove TrailTag from this computer. Your saved trips and photos will be kept." />
+        <Control Id="Intro" Type="Text" X="22" Y="65" Width="320" Height="30" Text="Repair the app files or remove TrailTag from this computer. Your saved outings and photos will be kept." />
         <Control Id="Repair" Type="PushButton" X="22" Y="117" Width="140" Height="25" Default="yes" Text="&amp;Repair TrailTag">
           <Publish Property="REINSTALL" Value="ALL" Order="1" />
           <Publish Property="REINSTALLMODE" Value="amus" Order="2" />
@@ -58,7 +58,7 @@
       <Dialog Id="TrailTagComplete" Width="370" Height="235" Title="TrailTag Setup">
         <Control Id="Title" Type="Text" X="22" Y="22" Width="325" Height="30" Transparent="yes" Text="{\TrailTagHeading}Setup complete" />
         <Control Id="Intro" Type="Text" X="22" Y="72" Width="320" Height="70" HideCondition="REMOVE = &quot;ALL&quot;" Text="TrailTag was installed successfully. Open TrailTag from the Windows Start menu to get started." />
-        <Control Id="Removed" Type="Text" X="22" Y="72" Width="320" Height="70" Hidden="yes" ShowCondition="REMOVE = &quot;ALL&quot;" Text="TrailTag has been removed. Your saved trips and photos have been kept." />
+        <Control Id="Removed" Type="Text" X="22" Y="72" Width="320" Height="70" Hidden="yes" ShowCondition="REMOVE = &quot;ALL&quot;" Text="TrailTag has been removed. Your saved outings and photos have been kept." />
         <Control Id="Line" Type="Line" X="0" Y="187" Width="370" Height="1" />
         <Control Id="Finish" Type="PushButton" X="278" Y="203" Width="70" Height="20" Default="yes" Cancel="yes" Text="&amp;Finish">
           <Publish Event="EndDialog" Value="Return" />

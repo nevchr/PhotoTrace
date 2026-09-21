@@ -37,6 +37,11 @@ if len(sys.argv) >= 5:
     window.preview_tabs.setCurrentIndex(int(sys.argv[4]))
 if len(sys.argv) >= 7:
     window.saved_trips_view.visual_tabs.setCurrentIndex(int(sys.argv[6]))
+if len(sys.argv) >= 8:
+    window.set_workflow_mode(sys.argv[7], persist=False)
+if len(sys.argv) >= 9:
+    window.guided_step = int(sys.argv[8])
+    window._update_workflow_visibility()
 window.ensurePolished()
 app.processEvents()
 

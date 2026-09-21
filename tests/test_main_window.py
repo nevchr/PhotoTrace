@@ -1,7 +1,7 @@
 import os
 import re
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 
 import piexif
@@ -66,12 +66,25 @@ def test_window_presents_guided_three_step_workflow(qt_app, tmp_path):
     try:
         assert window.preview_tabs.tabText(0) == "Photo matches"
         assert window.preview_tabs.tabText(1) == "Map preview"
-        assert window.preview_tabs.tabText(2) == "Saved trips"
+        assert window.preview_tabs.tabText(2) == "Outings"
+        assert window.workflow_mode == "guided"
+        assert window.files_card.isHidden() is False
+        assert window.timing_card.isHidden() is True
+        assert window.review_card.isHidden() is True
+        assert window.guided_step_label.text() == "Step 1 of 3"
         assert window.gpx_browse_button.text() == "Choose file"
         assert window.photo_browse_button.text() == "Choose folder"
         assert window.preview_button.objectName() == "secondaryAction"
         assert window.process_button.objectName() == "primaryAction"
         assert window.status_label.property("kind") == "neutral"
+        assert window.timezone_combo.findText("Pacific/Auckland") >= 0
+        assert window.timezone_combo.count() > 400
+
+        window.set_workflow_mode("all")
+        assert window.files_card.isHidden() is False
+        assert window.timing_card.isHidden() is False
+        assert window.review_card.isHidden() is False
+        assert window.guided_navigation_widget.isHidden() is True
     finally:
         window.close()
 
@@ -113,6 +126,12 @@ def test_preview_table_visually_distinguishes_match_status(qt_app, tmp_path):
             window.preview_table.item(1, 6).foreground().color().name()
             == "#9a3d32"
         )
+        assert window.preview_table.horizontalHeaderItem(2).text() == (
+            "Adjusted Camera Time"
+        )
+        assert window.preview_table.item(0, 2).text() == "12:00:00"
+        window.preview_table.set_results(results, timedelta(minutes=30))
+        assert window.preview_table.item(0, 2).text() == "12:30:00"
     finally:
         window.close()
 
@@ -168,10 +187,13 @@ def test_named_trip_can_be_saved_and_viewed_after_reload(
         window.saved_trips_view.open_button.click()
 
         assert window.preview_tabs.currentIndex() == 0
-        assert window.setup_widget.isHidden() is False
+        assert window.guided_step == 2
+        assert window.setup_widget.isHidden() is True
+        assert window.review_card.isHidden() is False
         assert window.loaded_trip_id == reloaded_trips[0].trip_id
         assert window.timezone_combo.currentText() == "America/Toronto"
-        assert window.save_trip_button.text() == "Update trip"
+        assert window.save_trip_button.text() == "Update outing"
+        assert window.fullscreen_map_button.isEnabled() is True
 
         window.preview_tabs.setCurrentIndex(window.saved_trips_tab_index)
         window.saved_trips_view.photo_gallery.photo_selected.emit(0)
@@ -214,7 +236,7 @@ def test_named_trip_can_be_saved_and_viewed_after_reload(
         assert store.load_trips() == []
         assert (new_photo_folder / "trail.jpg").exists()
         assert window.loaded_trip_id is None
-        assert window.save_trip_button.text() == "Save trip"
+        assert window.save_trip_button.text() == "Save outing"
     finally:
         window.close()
 
@@ -365,6 +387,15 @@ def test_real_browser_clicks_load_previews_without_navigation(qt_app, tmp_path, 
     selected = []
     view.photo_selected.connect(selected.append)
     try:
+        # Qt WebEngine 6.11 can defer offscreen page loading until the widget
+        # has a visible surface. The real app always displays this view.
+        view.resize(800, 600)
+        view.show()
+        qt_app.processEvents()
+        try:
+            wait_until(qt_app, lambda: view.page_ready, timeout=5)
+        except AssertionError:
+            pytest.skip("Qt WebEngine is unavailable on this headless test surface")
         view.set_results([TrackPoint(43.64, -79.38, 78., start)], results)
         wait_until(qt_app, lambda: view.page_ready)
         assert browser_value(qt_app, view, "window.testMarkers.length") == 2
@@ -486,7 +517,7 @@ def test_theme_text_has_at_least_4_5_to_1_contrast(mode):
             assert contrast_ratio(foreground[1], background[1]) >= 4.5, (mode, selector.strip())
 
 
-def test_window_preferences_are_restored_after_restart(qt_app, tmp_path):
+def test_window_preferences_restore_settings_but_not_file_paths(qt_app, tmp_path):
     settings_path = tmp_path / "preferences.ini"
     gpx_path = tmp_path / "last-route.gpx"
     photo_folder = tmp_path / "photos"
@@ -501,16 +532,21 @@ def test_window_preferences_are_restored_after_restart(qt_app, tmp_path):
     window.output_folder = output_folder
     window.timezone_combo.setCurrentText("America/Vancouver")
     window.max_gap.setValue(12)
+    window.set_workflow_mode("all")
     window.resize(1100, 760)
     window.close()
 
     restored = create_test_window(tmp_path, settings_path=settings_path)
     try:
-        assert restored.gpx_path == gpx_path
-        assert restored.photo_folder == photo_folder
-        assert restored.output_folder == output_folder
+        assert restored.gpx_path is None
+        assert restored.photo_folder is None
+        assert restored.output_folder is None
+        assert restored.gpx_field.text() == ""
+        assert restored.photo_field.text() == ""
+        assert restored.output_field.text() == ""
         assert restored.timezone_combo.currentText() == "America/Vancouver"
         assert restored.max_gap.value() == 12
+        assert restored.workflow_mode == "all"
         saved_geometry = QSettings(
             str(settings_path),
             QSettings.Format.IniFormat,

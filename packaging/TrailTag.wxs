@@ -37,6 +37,17 @@
             WorkingDirectory="INSTALLFOLDER">
           <ShortcutProperty Key="System.AppUserModel.ID" Value="TrailTag.Desktop" />
         </Shortcut>
+        <Shortcut
+            Id="TrailTagDesktopShortcut"
+            Directory="DesktopFolder"
+            Advertise="yes"
+            Icon="TrailTag.exe"
+            IconIndex="0"
+            Name="TrailTag"
+            Description="Geotag photos from a GPX route"
+            WorkingDirectory="INSTALLFOLDER">
+          <ShortcutProperty Key="System.AppUserModel.ID" Value="TrailTag.Desktop" />
+        </Shortcut>
       </File>
     </Component>
 

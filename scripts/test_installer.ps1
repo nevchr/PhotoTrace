@@ -53,8 +53,13 @@ $originalTripHash = if (Test-Path -LiteralPath $tripPath) {
     (Get-FileHash -LiteralPath $tripPath -Algorithm SHA256).Hash
 } else { $null }
 $shortcutPath = Join-Path $env:APPDATA "Microsoft\Windows\Start Menu\Programs\TrailTag.lnk"
+$desktopFolder = (New-Object -ComObject WScript.Shell).SpecialFolders.Item("Desktop")
+$desktopShortcutPath = Join-Path $desktopFolder "TrailTag.lnk"
 if (Test-Path -LiteralPath $shortcutPath) {
     throw "An existing TrailTag shortcut was found. The installer test will not replace it."
+}
+if (Test-Path -LiteralPath $desktopShortcutPath) {
+    throw "An existing TrailTag desktop shortcut was found. The installer test will not replace it."
 }
 
 function Invoke-Msi([string[]]$MsiArguments, [string]$LogName) {
@@ -85,6 +90,9 @@ try {
     }
     if (-not (Test-Path -LiteralPath $shortcutPath)) {
         throw "The installer did not create the Start menu shortcut."
+    }
+    if (-not (Test-Path -LiteralPath $desktopShortcutPath)) {
+        throw "The installer did not create the desktop shortcut."
     }
 
     # Query the advertised shortcut through Windows Installer to locate the
@@ -141,6 +149,9 @@ if ($windowsInstaller.ProductState($productCode) -eq 5) {
 if (Test-Path -LiteralPath $shortcutPath) {
     throw "The test Start menu shortcut was not removed."
 }
+if (Test-Path -LiteralPath $desktopShortcutPath) {
+    throw "The test desktop shortcut was not removed."
+}
 if ($installedExecutable -and (Test-Path -LiteralPath $installedExecutable)) {
     throw "The test executable was not removed."
 }
@@ -150,5 +161,5 @@ $finalTripHash = if (Test-Path -LiteralPath $tripPath) {
 if ($originalTripHash -ne $finalTripHash) {
     throw "The saved-trip file changed during the installer test."
 }
-Write-Host "Uninstall passed. Saved trips were unchanged."
+Write-Host "Uninstall passed. Saved outings were unchanged."
 Write-Host "Verification logs: $qaRoot"

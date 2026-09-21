@@ -1,5 +1,6 @@
 from datetime import timedelta
 from pathlib import Path
+from zoneinfo import available_timezones
 
 from PySide6.QtCore import QSettings, QSignalBlocker, QThread, QTimer, Qt
 from PySide6.QtGui import QAction, QActionGroup, QCloseEvent, QIcon
@@ -27,7 +28,7 @@ from ..processor import ProcessResult
 from ..trip_store import SavedTrip, TripStore, TripStoreError, create_saved_trip
 from ..version import __version__, resource_path
 from ..workers import PreviewBatch, PreviewWorker, ProcessingWorker
-from .map_view import MapView
+from .map_view import MapView, show_fullscreen_map
 from .preview_table import PreviewTable
 from .saved_trips_view import SavedTripsView
 from .theme import apply_theme, themed_stylesheet
@@ -406,6 +407,16 @@ class MainWindow(QMainWindow):
             if settings is not None
             else QSettings("TrailTag", "TrailTag")
         )
+        saved_workflow_mode = self.settings.value(
+            "workflow/mode", "guided", type=str
+        )
+        self.workflow_mode = (
+            saved_workflow_mode
+            if saved_workflow_mode in ("guided", "all")
+            else "guided"
+        )
+        self.guided_step = 0
+        self.advance_guided_after_preview = False
         saved_theme = self.settings.value("appearance/theme", "light", type=str)
         self.theme_mode = saved_theme if saved_theme in ("light", "dark") else "light"
         apply_theme(QApplication.instance(), self.theme_mode)
@@ -419,6 +430,7 @@ class MainWindow(QMainWindow):
         self.build_ui()
         self.set_theme(self.theme_mode, persist=False)
         self.restore_preferences()
+        self.set_workflow_mode(self.workflow_mode, persist=False)
 
     def build_ui(self):
         central_widget = QWidget()
@@ -453,7 +465,10 @@ class MainWindow(QMainWindow):
         # Header
         # -------------------------------------------------
 
-        header_layout = QHBoxLayout()
+        header_widget = QWidget()
+        header_widget.setMaximumHeight(84)
+        header_layout = QHBoxLayout(header_widget)
+        header_layout.setContentsMargins(0, 0, 0, 0)
         header_layout.setSpacing(16)
 
         brand_layout = QVBoxLayout()
@@ -474,19 +489,40 @@ class MainWindow(QMainWindow):
         local_badge.setObjectName("localBadge")
         local_badge.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
+        self.workflow_mode_combo = QComboBox()
+        self.workflow_mode_combo.addItem("Guided", "guided")
+        self.workflow_mode_combo.addItem("All at once", "all")
+        self.workflow_mode_combo.setAccessibleName("Workflow mode")
+        self.workflow_mode_combo.setToolTip(
+            "Guided shows one step at a time. All at once shows the full workspace."
+        )
+        self.workflow_mode_combo.setMinimumWidth(125)
+        workflow_index = self.workflow_mode_combo.findData(self.workflow_mode)
+        self.workflow_mode_combo.setCurrentIndex(max(0, workflow_index))
+        self.workflow_mode_combo.currentIndexChanged.connect(
+            self._workflow_mode_selected
+        )
+
+        self.outings_button = QPushButton("Browse outings")
+        self.outings_button.setObjectName("compactAction")
+        self.outings_button.setToolTip("Open your saved outings")
+        self.outings_button.clicked.connect(self.open_outings)
+
         header_layout.addLayout(brand_layout)
         header_layout.addStretch()
+        header_layout.addWidget(self.workflow_mode_combo)
+        header_layout.addWidget(self.outings_button)
         header_layout.addWidget(local_badge)
 
-        main_layout.addLayout(header_layout)
+        main_layout.addWidget(header_widget)
 
         # -------------------------------------------------
         # File selection card
         # -------------------------------------------------
 
-        files_card = QFrame()
-        files_card.setObjectName("card")
-        files_layout = QVBoxLayout(files_card)
+        self.files_card = QFrame()
+        self.files_card.setObjectName("card")
+        files_layout = QVBoxLayout(self.files_card)
         files_layout.setContentsMargins(20, 16, 20, 18)
         files_layout.setSpacing(12)
 
@@ -527,7 +563,7 @@ class MainWindow(QMainWindow):
         )
         self.gpx_field.setAccessibleName("Selected GPX track")
         self.gpx_browse_button.setAccessibleName("Choose GPX track")
-        self.gpx_browse_button.setToolTip("Choose the GPX route recorded on your trip")
+        self.gpx_browse_button.setToolTip("Choose the GPX route recorded on your outing")
         self.photo_field.setAccessibleName("Selected original photo folder")
         self.photo_browse_button.setAccessibleName("Choose original photo folder")
         self.photo_browse_button.setToolTip("Choose the folder containing your original JPEG photos")
@@ -554,9 +590,9 @@ class MainWindow(QMainWindow):
         # Timing card
         # -------------------------------------------------
 
-        timing_card = QFrame()
-        timing_card.setObjectName("card")
-        timing_layout = QVBoxLayout(timing_card)
+        self.timing_card = QFrame()
+        self.timing_card.setObjectName("card")
+        timing_layout = QVBoxLayout(self.timing_card)
         timing_layout.setContentsMargins(20, 16, 20, 18)
         timing_layout.setSpacing(10)
 
@@ -581,17 +617,21 @@ class MainWindow(QMainWindow):
 
         self.timezone_combo = QComboBox()
         self.timezone_combo.setEditable(True)
+        preferred_timezones = [
+            "America/Toronto",
+            "America/Vancouver",
+            "America/Edmonton",
+            "America/Winnipeg",
+            "America/Halifax",
+            "America/St_Johns",
+            "UTC",
+        ]
+        all_timezones = sorted(available_timezones())
         self.timezone_combo.addItems(
-            [
-                "America/Toronto",
-                "America/Vancouver",
-                "America/Edmonton",
-                "America/Winnipeg",
-                "America/Halifax",
-                "America/St_Johns",
-                "UTC",
-            ]
+            preferred_timezones
+            + [zone for zone in all_timezones if zone not in preferred_timezones]
         )
+        self.timezone_combo.setMaxVisibleItems(18)
         self.timezone_combo.setCurrentText("America/Toronto")
         self.timezone_combo.setAccessibleName("Photo timezone")
         self.timezone_combo.setToolTip(
@@ -651,17 +691,17 @@ class MainWindow(QMainWindow):
         setup_cards_layout = QHBoxLayout(self.setup_widget)
         setup_cards_layout.setContentsMargins(0, 0, 0, 0)
         setup_cards_layout.setSpacing(16)
-        setup_cards_layout.addWidget(files_card, 3)
-        setup_cards_layout.addWidget(timing_card, 2)
+        setup_cards_layout.addWidget(self.files_card, 3)
+        setup_cards_layout.addWidget(self.timing_card, 2)
         main_layout.addWidget(self.setup_widget)
 
         # -------------------------------------------------
         # Review card
         # -------------------------------------------------
 
-        review_card = QFrame()
-        review_card.setObjectName("card")
-        review_layout = QVBoxLayout(review_card)
+        self.review_card = QFrame()
+        self.review_card.setObjectName("card")
+        review_layout = QVBoxLayout(self.review_card)
         review_layout.setContentsMargins(20, 16, 20, 18)
         review_layout.setSpacing(10)
 
@@ -671,7 +711,7 @@ class MainWindow(QMainWindow):
 
         self.review_step = QLabel("STEP 3")
         self.review_step.setObjectName("stepLabel")
-        self.review_title = QLabel("Review and save your trip")
+        self.review_title = QLabel("Review and save your outing")
         self.review_title.setObjectName("sectionTitle")
 
         review_title_layout.addWidget(self.review_step)
@@ -686,6 +726,14 @@ class MainWindow(QMainWindow):
 
         review_header.addLayout(review_title_layout)
         review_header.addStretch()
+        self.fullscreen_map_button = QPushButton("Open map full screen")
+        self.fullscreen_map_button.setObjectName("compactAction")
+        self.fullscreen_map_button.setEnabled(False)
+        self.fullscreen_map_button.setToolTip(
+            "Open the current route map using the full screen"
+        )
+        self.fullscreen_map_button.clicked.connect(self.open_current_map_fullscreen)
+        review_header.addWidget(self.fullscreen_map_button)
         review_header.addWidget(self.status_label)
         review_layout.addLayout(review_header)
 
@@ -703,11 +751,29 @@ class MainWindow(QMainWindow):
         self.preview_tabs.addTab(self.map_view, "Map preview")
         self.saved_trips_tab_index = self.preview_tabs.addTab(
             self.saved_trips_view,
-            "Saved trips",
+            "Outings",
         )
         self.preview_tabs.setMinimumHeight(260)
         review_layout.addWidget(self.preview_tabs)
-        main_layout.addWidget(review_card, 1)
+        main_layout.addWidget(self.review_card, 1)
+
+        self.guided_navigation_widget = QWidget()
+        guided_navigation_layout = QHBoxLayout(self.guided_navigation_widget)
+        guided_navigation_layout.setContentsMargins(0, 0, 0, 0)
+        guided_navigation_layout.setSpacing(10)
+        self.guided_step_label = QLabel("Step 1 of 3")
+        self.guided_step_label.setObjectName("helperText")
+        self.guided_back_button = QPushButton("Back")
+        self.guided_back_button.setObjectName("secondaryAction")
+        self.guided_back_button.clicked.connect(self.guided_back)
+        self.guided_next_button = QPushButton("Next: Camera time")
+        self.guided_next_button.setObjectName("primaryAction")
+        self.guided_next_button.clicked.connect(self.guided_next)
+        guided_navigation_layout.addWidget(self.guided_step_label)
+        guided_navigation_layout.addStretch()
+        guided_navigation_layout.addWidget(self.guided_back_button)
+        guided_navigation_layout.addWidget(self.guided_next_button)
+        main_layout.addWidget(self.guided_navigation_widget)
 
         self.progress_widget = QFrame()
         self.progress_widget.setObjectName("operationPanel")
@@ -752,11 +818,11 @@ class MainWindow(QMainWindow):
         self.preview_button.setToolTip("Check matches before creating any photo copies")
         self.preview_button.clicked.connect(self.preview_matches)
 
-        self.save_trip_button = QPushButton("Save trip")
+        self.save_trip_button = QPushButton("Save outing")
         self.save_trip_button.setObjectName("secondaryAction")
         self.save_trip_button.setMinimumWidth(120)
         self.save_trip_button.setEnabled(False)
-        self.save_trip_button.setToolTip("Keep this route and its details in your trip library")
+        self.save_trip_button.setToolTip("Keep this route and its details in your outing library")
         self.save_trip_button.clicked.connect(self.save_current_trip)
 
         self.process_button = QPushButton(
@@ -826,25 +892,127 @@ class MainWindow(QMainWindow):
                 f"<b>TrailTag {__version__}</b><br><br>"
                 "Match JPEG photos to a recorded GPX route and create "
                 "geotagged copies.<br><br>"
-                "Your photos and saved trips stay on this computer. "
+                "Your photos and saved outings stay on this computer. "
                 "Original photos and existing output files are never replaced."
                 "<br><br>Maps use online OpenStreetMap tiles. The map provider "
                 "receives requests for the area you view. Photo files are not uploaded."
             ),
         )
 
+    def _workflow_mode_selected(self, index: int) -> None:
+        mode = self.workflow_mode_combo.itemData(index)
+        if isinstance(mode, str):
+            self.set_workflow_mode(mode)
+
+    def set_workflow_mode(self, mode: str, *, persist: bool = True) -> None:
+        if mode not in ("guided", "all"):
+            return
+
+        self.workflow_mode = mode
+        combo_index = self.workflow_mode_combo.findData(mode)
+        if combo_index >= 0 and combo_index != self.workflow_mode_combo.currentIndex():
+            blocker = QSignalBlocker(self.workflow_mode_combo)
+            self.workflow_mode_combo.setCurrentIndex(combo_index)
+            del blocker
+
+        if mode == "guided":
+            self.guided_step = min(max(self.guided_step, 0), 2)
+
+        if persist:
+            self.settings.setValue("workflow/mode", mode)
+            self.settings.sync()
+
+        self._update_workflow_visibility()
+
+    def guided_back(self) -> None:
+        if self.guided_step > 0:
+            self.guided_step -= 1
+            self._update_workflow_visibility()
+
+    def guided_next(self) -> None:
+        if self.guided_step == 0:
+            missing = []
+            if self.gpx_path is None:
+                missing.append("a GPX track")
+            if self.photo_folder is None:
+                missing.append("the original photo folder")
+            if self.output_folder is None:
+                missing.append("an output folder")
+            if missing:
+                message = "Choose " + ", ".join(missing) + " before continuing."
+                self.set_status(message, "warning")
+                QMessageBox.warning(self, "Files Required", message)
+                return
+            self.guided_step = 1
+            self._update_workflow_visibility()
+            return
+
+        if self.guided_step == 1:
+            self.advance_guided_after_preview = True
+            self.preview_matches()
+            if self.operation_thread is None:
+                self.advance_guided_after_preview = False
+
+    def open_outings(self) -> None:
+        self.saved_trips_view.refresh()
+        self.preview_tabs.setCurrentIndex(self.saved_trips_tab_index)
+
+    def open_current_map_fullscreen(self) -> None:
+        if not self.track_points:
+            return
+        show_fullscreen_map(
+            self,
+            self.track_points,
+            self.preview_results,
+            title="TrailTag outing map",
+        )
+
+    def _update_workflow_visibility(self) -> None:
+        showing_outings = (
+            self.preview_tabs.currentIndex() == self.saved_trips_tab_index
+        )
+        if showing_outings:
+            self.setup_widget.hide()
+            self.review_card.show()
+            self.guided_navigation_widget.hide()
+            self.workflow_actions_widget.hide()
+            return
+
+        if self.workflow_mode == "all":
+            self.files_card.show()
+            self.timing_card.show()
+            self.setup_widget.show()
+            self.review_card.show()
+            self.guided_navigation_widget.hide()
+            self.workflow_actions_widget.show()
+            return
+
+        self.guided_navigation_widget.show()
+        self.guided_step_label.setText(f"Step {self.guided_step + 1} of 3")
+        self.guided_back_button.setVisible(self.guided_step > 0)
+        self.guided_next_button.setVisible(self.guided_step < 2)
+        self.files_card.setVisible(self.guided_step == 0)
+        self.timing_card.setVisible(self.guided_step == 1)
+        self.setup_widget.setVisible(self.guided_step < 2)
+        self.review_card.setVisible(self.guided_step == 2)
+        self.workflow_actions_widget.setVisible(self.guided_step == 2)
+        self.guided_next_button.setText(
+            "Next: Camera time"
+            if self.guided_step == 0
+            else "Preview and continue"
+        )
+
     def update_workspace_mode(self, tab_index: int) -> None:
         showing_saved_trips = tab_index == self.saved_trips_tab_index
-        self.setup_widget.setVisible(not showing_saved_trips)
-        self.workflow_actions_widget.setVisible(not showing_saved_trips)
         self.review_step.setText(
-            "TRIP LIBRARY" if showing_saved_trips else "STEP 3"
+            "OUTING LIBRARY" if showing_saved_trips else "STEP 3"
         )
         self.review_title.setText(
-            "Your saved trips"
+            "Your outings"
             if showing_saved_trips
-            else "Review and save your trip"
+            else "Review and save your outing"
         )
+        self._update_workflow_visibility()
 
     def create_file_picker(
         self,
@@ -895,7 +1063,7 @@ class MainWindow(QMainWindow):
 
         self.loaded_trip_id = None
         self.loaded_trip_name = None
-        self.save_trip_button.setText("Save trip")
+        self.save_trip_button.setText("Save outing")
 
         self.gpx_field.setText(
             file_path
@@ -967,33 +1135,10 @@ class MainWindow(QMainWindow):
         if saved_geometry is not None:
             self.restoreGeometry(saved_geometry)
 
-        saved_gpx_path = self.settings.value(
-            "recent/gpx_path", "", type=str
-        )
-        gpx_path = Path(saved_gpx_path) if saved_gpx_path else None
-        if gpx_path is not None and gpx_path.is_file():
-            self.gpx_path = gpx_path
-            self.gpx_field.setText(str(gpx_path))
-
-        saved_photo_folder = self.settings.value(
-            "recent/photo_folder", "", type=str
-        )
-        photo_folder = (
-            Path(saved_photo_folder) if saved_photo_folder else None
-        )
-        if photo_folder is not None and photo_folder.is_dir():
-            self.photo_folder = photo_folder
-            self.photo_field.setText(str(photo_folder))
-
-        saved_output_folder = self.settings.value(
-            "recent/output_folder", "", type=str
-        )
-        output_folder = (
-            Path(saved_output_folder) if saved_output_folder else None
-        )
-        if output_folder is not None and output_folder.is_dir():
-            self.output_folder = output_folder
-            self.output_field.setText(str(output_folder))
+        # File paths are intentionally not restored. Starting with blank fields
+        # prevents a new outing from being written to an old folder by mistake.
+        self.settings.remove("recent")
+        self.settings.sync()
 
         del blockers
 
@@ -1007,18 +1152,8 @@ class MainWindow(QMainWindow):
             "matching/max_gap_minutes",
             self.max_gap.value(),
         )
-        if self.gpx_path is not None:
-            self.settings.setValue("recent/gpx_path", str(self.gpx_path))
-        if self.photo_folder is not None:
-            self.settings.setValue(
-                "recent/photo_folder",
-                str(self.photo_folder),
-            )
-        if self.output_folder is not None:
-            self.settings.setValue(
-                "recent/output_folder",
-                str(self.output_folder),
-            )
+        self.settings.setValue("workflow/mode", self.workflow_mode)
+        self.settings.remove("recent")
         self.settings.sync()
 
     def get_time_offset(self) -> timedelta:
@@ -1047,6 +1182,7 @@ class MainWindow(QMainWindow):
         )
 
         self.save_trip_button.setEnabled(False)
+        self.fullscreen_map_button.setEnabled(False)
 
         self.set_status("Preview required.", "warning")
 
@@ -1103,7 +1239,7 @@ class MainWindow(QMainWindow):
         self._start_operation("preview", worker)
 
     # -----------------------------------------------------
-    # Saved trips
+    # Saved outings
     # -----------------------------------------------------
 
     def save_current_trip(self):
@@ -1111,20 +1247,20 @@ class MainWindow(QMainWindow):
             self.set_status("Preview a route before saving it.", "warning")
             QMessageBox.warning(
                 self,
-                "No Trip to Save",
-                "Preview a GPX route before saving a trip.",
+                "No Outing to Save",
+                "Preview a GPX route before saving an outing.",
             )
             return
 
         default_name = self.loaded_trip_name or (
             self.gpx_path.stem.replace("_", " ").replace("-", " ").strip()
             if self.gpx_path is not None
-            else "My trip"
+            else "My outing"
         )
         trip_name, accepted = QInputDialog.getText(
             self,
-            "Save Trip",
-            "Trip name:",
+            "Save Outing",
+            "Outing name:",
             text=default_name,
         )
 
@@ -1133,11 +1269,11 @@ class MainWindow(QMainWindow):
 
         trip_name = trip_name.strip()
         if not trip_name:
-            self.set_status("Enter a name for this trip.", "warning")
+            self.set_status("Enter a name for this outing.", "warning")
             QMessageBox.warning(
                 self,
-                "Trip Name Required",
-                "Please enter a name for this trip.",
+                "Outing Name Required",
+                "Please enter a name for this outing.",
             )
             return
 
@@ -1158,14 +1294,14 @@ class MainWindow(QMainWindow):
         try:
             self.trip_store.save_trip(trip)
         except TripStoreError as error:
-            self.set_status("Trip could not be saved.", "error")
+            self.set_status("Outing could not be saved.", "error")
             QMessageBox.critical(self, "Save Failed", str(error))
             return
 
         self.saved_trips_view.refresh(select_trip_id=trip.trip_id)
         self.loaded_trip_id = trip.trip_id
         self.loaded_trip_name = trip.name
-        self.save_trip_button.setText("Update trip")
+        self.save_trip_button.setText("Update outing")
         self.preview_tabs.setCurrentIndex(self.saved_trips_tab_index)
         self.set_status(f'“{trip.name}” saved on this computer.', "success")
 
@@ -1202,14 +1338,21 @@ class MainWindow(QMainWindow):
         self.preview_results = list(trip.preview_results)
         self.loaded_trip_id = trip.trip_id
         self.loaded_trip_name = trip.name
-        self.preview_table.set_results(self.preview_results)
+        self.preview_table.set_results(
+            self.preview_results,
+            timedelta(seconds=trip.time_offset_seconds),
+        )
         self.map_view.set_results(self.track_points, self.preview_results)
 
         matched = sum(result.matched for result in self.preview_results)
         self.process_button.setEnabled(matched > 0)
         self.save_trip_button.setEnabled(bool(self.track_points))
-        self.save_trip_button.setText("Update trip")
+        self.fullscreen_map_button.setEnabled(bool(self.track_points))
+        self.save_trip_button.setText("Update outing")
+        if self.workflow_mode == "guided":
+            self.guided_step = 2
         self.preview_tabs.setCurrentIndex(0)
+        self._update_workflow_visibility()
 
         missing_sources = _count_missing_sources(trip)
         if missing_sources:
@@ -1228,7 +1371,10 @@ class MainWindow(QMainWindow):
         self.photo_folder = trip.photo_folder
         self.preview_results = list(trip.preview_results)
         self.photo_field.setText(_display_path(trip.photo_folder))
-        self.preview_table.set_results(self.preview_results)
+        self.preview_table.set_results(
+            self.preview_results,
+            self.get_time_offset(),
+        )
         self.map_view.set_results(self.track_points, self.preview_results)
 
     def forget_deleted_trip(self, trip_id: str) -> None:
@@ -1237,7 +1383,7 @@ class MainWindow(QMainWindow):
 
         self.loaded_trip_id = None
         self.loaded_trip_name = None
-        self.save_trip_button.setText("Save trip")
+        self.save_trip_button.setText("Save outing")
 
     # -----------------------------------------------------
     # Processing
@@ -1347,7 +1493,10 @@ class MainWindow(QMainWindow):
         if operation == "preview" and isinstance(payload, PreviewBatch):
             self.track_points = payload.track_points
             self.preview_results = payload.preview_results
-            self.preview_table.set_results(self.preview_results)
+            self.preview_table.set_results(
+                self.preview_results,
+                self.get_time_offset(),
+            )
             self.map_view.set_results(
                 self.track_points,
                 self.preview_results,
@@ -1390,9 +1539,15 @@ class MainWindow(QMainWindow):
             self._show_processing_report(payload)
 
         self._set_operation_controls(active=False)
+        if operation == "preview" and self.advance_guided_after_preview:
+            self.advance_guided_after_preview = False
+            self.guided_step = 2
+            self.preview_tabs.setCurrentIndex(0)
+            self._update_workflow_visibility()
 
     def _operation_cancelled(self, payload: object) -> None:
         operation = self.active_operation
+        self.advance_guided_after_preview = False
 
         if operation == "process" and isinstance(payload, list):
             successful, skipped, failed = _processing_counts(payload)
@@ -1418,6 +1573,7 @@ class MainWindow(QMainWindow):
         self._set_operation_controls(active=False)
 
     def _operation_failed(self, error_message: str) -> None:
+        self.advance_guided_after_preview = False
         operation_name = (
             "Preview" if self.active_operation == "preview" else "Processing"
         )
@@ -1451,6 +1607,11 @@ class MainWindow(QMainWindow):
             self.offset_seconds,
             self.max_gap,
             self.preview_tabs,
+            self.workflow_mode_combo,
+            self.outings_button,
+            self.guided_back_button,
+            self.guided_next_button,
+            self.fullscreen_map_button,
         ):
             control.setEnabled(enabled)
 
@@ -1465,6 +1626,7 @@ class MainWindow(QMainWindow):
         matched = sum(result.matched for result in self.preview_results)
         self.process_button.setEnabled(matched > 0)
         self.save_trip_button.setEnabled(bool(self.track_points))
+        self.fullscreen_map_button.setEnabled(bool(self.track_points))
 
     def cancel_active_operation(self) -> None:
         if self.operation_worker is None:

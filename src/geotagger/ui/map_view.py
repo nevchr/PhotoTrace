@@ -4,7 +4,14 @@ import json
 from PySide6.QtCore import QObject, Signal, Slot
 from PySide6.QtWebChannel import QWebChannel
 from PySide6.QtWebEngineWidgets import QWebEngineView
-from PySide6.QtWidgets import QApplication
+from PySide6.QtWidgets import (
+    QApplication,
+    QDialog,
+    QHBoxLayout,
+    QPushButton,
+    QVBoxLayout,
+    QWidget,
+)
 
 from ..gpx_parser import TrackPoint
 from ..image_preview import create_photo_preview_data_uri
@@ -18,6 +25,54 @@ class PhotoBridge(QObject):
     @Slot(int)
     def selectPhoto(self, photo_index: int) -> None:
         self.photo_selected.emit(photo_index)
+
+
+class FullscreenMapDialog(QDialog):
+    def __init__(
+        self,
+        parent: QWidget,
+        track_points: list[TrackPoint],
+        preview_results: list[PreviewResult],
+        *,
+        title: str,
+    ):
+        super().__init__(parent)
+        self.setWindowTitle(title)
+        self.setModal(True)
+
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(10, 10, 10, 10)
+        layout.setSpacing(8)
+
+        controls = QHBoxLayout()
+        controls.addStretch()
+        close_button = QPushButton("Close full screen")
+        close_button.setObjectName("compactAction")
+        close_button.clicked.connect(self.accept)
+        controls.addWidget(close_button)
+
+        self.map_view = MapView()
+        self.map_view.set_results(track_points, preview_results)
+
+        layout.addLayout(controls)
+        layout.addWidget(self.map_view, 1)
+
+
+def show_fullscreen_map(
+    parent: QWidget,
+    track_points: list[TrackPoint],
+    preview_results: list[PreviewResult],
+    *,
+    title: str = "TrailTag map",
+) -> None:
+    dialog = FullscreenMapDialog(
+        parent,
+        track_points,
+        preview_results,
+        title=title,
+    )
+    dialog.showFullScreen()
+    dialog.exec()
 
 
 class MapView(QWebEngineView):
@@ -239,7 +294,7 @@ class MapView(QWebEngineView):
             <script>
                 const mapStatus = document.getElementById("map-status");
                 if (!window.L) {{
-                    mapStatus.textContent = "The map could not load. Check your internet connection, then reopen this trip or preview again. Your saved trip details are still available.";
+                    mapStatus.textContent = "The map could not load. Check your internet connection, then reopen this outing or preview again. Your saved outing details are still available.";
                 }} else {{
                 mapStatus.hidden = true;
                 const route = {route_json};

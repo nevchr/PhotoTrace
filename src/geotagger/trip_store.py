@@ -14,7 +14,7 @@ STORE_VERSION = 1
 
 
 class TripStoreError(RuntimeError):
-    """Raised when saved trips cannot be read or written safely."""
+    """Raised when saved outings cannot be read or written safely."""
 
 
 @dataclass
@@ -151,7 +151,7 @@ class TripStore:
             ]
         except (OSError, TypeError, ValueError, KeyError, json.JSONDecodeError) as error:
             raise TripStoreError(
-                "TrailTag could not read the saved trips file. "
+                "TrailTag could not read the saved outings file. "
                 "The existing file was left unchanged."
             ) from error
 
@@ -163,7 +163,7 @@ class TripStore:
 
     def save_trip(self, trip: SavedTrip) -> None:
         if not trip.name:
-            raise TripStoreError("A trip name is required.")
+            raise TripStoreError("An outing name is required.")
 
         trips = self.load_trips()
         trips = [
@@ -205,8 +205,8 @@ class TripStore:
             temporary_path.replace(self.path)
         except OSError as error:
             raise TripStoreError(
-                "TrailTag could not update Saved trips. "
-                "No existing trips were changed."
+                "TrailTag could not update Outings. "
+                "No existing outings were changed."
             ) from error
 
 

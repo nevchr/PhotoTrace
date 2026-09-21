@@ -20,7 +20,7 @@ from PySide6.QtWidgets import (
 
 from ..trip_store import SavedTrip, TripStore, TripStoreError
 from .elevation_profile import ElevationProfile
-from .map_view import MapView
+from .map_view import MapView, show_fullscreen_map
 from .photo_gallery import PhotoGallery
 
 
@@ -54,7 +54,7 @@ class SavedTripsView(QWidget):
         library_layout.setContentsMargins(14, 14, 14, 14)
         library_layout.setSpacing(8)
 
-        library_title = QLabel("Your trips")
+        library_title = QLabel("Your outings")
         library_title.setObjectName("tripPanelTitle")
         library_help = QLabel("Saved on this computer")
         library_help.setObjectName("helperText")
@@ -69,7 +69,7 @@ class SavedTripsView(QWidget):
         library_layout.addWidget(self.trip_list, 1)
 
         self.empty_label = QLabel(
-            "No saved trips yet.\n\nPreview a route, then choose Save trip."
+            "No saved outings yet.\n\nPreview a route, then choose Save outing."
         )
         self.empty_label.setObjectName("savedTripEmpty")
         self.empty_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -93,12 +93,14 @@ class SavedTripsView(QWidget):
         title_text_layout.addWidget(self.saved_date_label)
 
         self.open_button = QPushButton("Open for editing")
+        self.fullscreen_button = QPushButton("Open map full screen")
         self.rename_button = QPushButton("Rename")
         self.reconnect_button = QPushButton("Reconnect photos")
         self.delete_button = QPushButton("Delete")
 
         for button in (
             self.open_button,
+            self.fullscreen_button,
             self.rename_button,
             self.reconnect_button,
         ):
@@ -106,6 +108,7 @@ class SavedTripsView(QWidget):
         self.delete_button.setObjectName("dangerAction")
 
         self.open_button.clicked.connect(self._request_open_trip)
+        self.fullscreen_button.clicked.connect(self._open_map_fullscreen)
         self.rename_button.clicked.connect(self._rename_trip)
         self.reconnect_button.clicked.connect(self._reconnect_photos)
         self.delete_button.clicked.connect(self._delete_trip)
@@ -113,6 +116,7 @@ class SavedTripsView(QWidget):
         action_layout = QHBoxLayout()
         action_layout.setSpacing(6)
         action_layout.addWidget(self.open_button)
+        action_layout.addWidget(self.fullscreen_button)
         action_layout.addWidget(self.rename_button)
         action_layout.addWidget(self.reconnect_button)
         action_layout.addWidget(self.delete_button)
@@ -212,7 +216,7 @@ class SavedTripsView(QWidget):
         gallery_layout = QVBoxLayout(gallery_panel)
         gallery_layout.setContentsMargins(8, 9, 8, 8)
         gallery_layout.setSpacing(5)
-        gallery_title = QLabel("Trip gallery")
+        gallery_title = QLabel("Outing gallery")
         gallery_title.setObjectName("tripGalleryTitle")
         gallery_help = QLabel("Select a photo to find it on the route")
         gallery_help.setObjectName("tripGalleryHelp")
@@ -275,7 +279,7 @@ class SavedTripsView(QWidget):
             self.empty_label.setText(str(error))
             self.empty_label.show()
             self.details_widget.hide()
-            self.map_view.show_empty_map("Saved trips could not be loaded.")
+            self.map_view.show_empty_map("Saved outings could not be loaded.")
             self.elevation_profile.set_track_points([])
             self.photo_gallery.set_results([])
             return False
@@ -301,11 +305,11 @@ class SavedTripsView(QWidget):
         if not trips:
             self.current_trip = None
             self.empty_label.setText(
-                "No saved trips yet.\n\nPreview a route, then choose Save trip."
+                "No saved outings yet.\n\nPreview a route, then choose Save outing."
             )
             self.empty_label.show()
             self.details_widget.hide()
-            self.map_view.show_empty_map("Select a saved trip to view its route.")
+            self.map_view.show_empty_map("Select a saved outing to view its route.")
             self.elevation_profile.set_track_points([])
             self.photo_gallery.set_results([])
             return True
@@ -362,6 +366,7 @@ class SavedTripsView(QWidget):
         self.file_status_label.style().unpolish(self.file_status_label)
         self.file_status_label.style().polish(self.file_status_label)
         self.reconnect_button.setEnabled(bool(trip.preview_results))
+        self.fullscreen_button.setEnabled(bool(trip.track_points))
         self.map_view.set_results(trip.track_points, trip.preview_results)
         self.elevation_profile.set_track_points(trip.track_points)
         self.photo_gallery.set_results(trip.preview_results)
@@ -405,6 +410,17 @@ class SavedTripsView(QWidget):
         if trip is not None:
             self.open_trip_requested.emit(trip)
 
+    def _open_map_fullscreen(self) -> None:
+        trip = self._selected_trip()
+        if trip is None or not trip.track_points:
+            return
+        show_fullscreen_map(
+            self,
+            trip.track_points,
+            trip.preview_results,
+            title=f"{trip.name} map",
+        )
+
     def _rename_trip(self) -> None:
         trip = self._selected_trip()
         if trip is None:
@@ -412,8 +428,8 @@ class SavedTripsView(QWidget):
 
         name, accepted = QInputDialog.getText(
             self,
-            "Rename Trip",
-            "Trip name:",
+            "Rename Outing",
+            "Outing name:",
             text=trip.name,
         )
         name = name.strip()
@@ -422,8 +438,8 @@ class SavedTripsView(QWidget):
         if not name:
             QMessageBox.warning(
                 self,
-                "Trip Name Required",
-                "Please enter a name for this trip.",
+                "Outing Name Required",
+                "Please enter a name for this outing.",
             )
             return
 
@@ -438,7 +454,7 @@ class SavedTripsView(QWidget):
 
         self.refresh(select_trip_id=trip.trip_id)
         self.trip_changed.emit(trip)
-        self.status_message.emit(f'Changed the trip name to “{name}”.', "success")
+        self.status_message.emit(f'Changed the outing name to “{name}”.', "success")
 
     def _delete_trip(self) -> None:
         trip = self._selected_trip()
@@ -447,7 +463,7 @@ class SavedTripsView(QWidget):
 
         answer = QMessageBox.question(
             self,
-            "Delete Saved Trip",
+            "Delete Saved Outing",
             (
                 f'Delete “{trip.name}” from TrailTag?\n\n'
                 "Your GPX and photo files will not be deleted."
@@ -467,7 +483,7 @@ class SavedTripsView(QWidget):
         self.refresh()
         self.trip_deleted.emit(trip.trip_id)
         self.status_message.emit(
-            f'“{trip.name}” was removed from Saved trips.',
+            f'“{trip.name}” was removed from Outings.',
             "success",
         )
 
@@ -495,7 +511,7 @@ class SavedTripsView(QWidget):
             QMessageBox.warning(
                 self,
                 "Photos Not Found",
-                "TrailTag could not find any of this trip's photos in that folder.",
+                "TrailTag could not find any of this outing's photos in that folder.",
             )
             return
 
@@ -523,7 +539,7 @@ class SavedTripsView(QWidget):
         self.trip_changed.emit(trip)
         kind = "success" if found_count == len(replacements) else "warning"
         self.status_message.emit(
-            f"Reconnected {found_count} of {len(replacements)} trip photos.",
+            f"Reconnected {found_count} of {len(replacements)} outing photos.",
             kind,
         )
 
