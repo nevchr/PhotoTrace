@@ -10,10 +10,14 @@ creates geotagged copies in a separate output folder.
 
 No Python, Git, developer tools, or extra downloads are required.
 
-1. Open the [latest PhotoTrace release](https://github.com/nevchr/PhotoTrace/releases/latest).
-2. Download `PhotoTrace-Setup-0.3.1-x64.msi`.
-3. Double-click the downloaded installer and follow the Windows prompts.
-4. Open PhotoTrace from the desktop shortcut or Start menu.
+### [Download PhotoTrace for Windows](https://github.com/nevchr/PhotoTrace/releases/latest/download/PhotoTrace-Setup-x64.msi)
+
+Click the link above, open the downloaded installer, and follow the Windows
+prompts. PhotoTrace will then be available from the desktop shortcut and Start
+menu. The link always downloads the newest Windows installer.
+
+You can also visit the [latest PhotoTrace release](https://github.com/nevchr/PhotoTrace/releases/latest)
+to see the versioned installer, checksum, release notes, and portable package.
 
 The installer is not digitally signed yet, so Windows may show an
 **Unknown publisher** warning. Check that the installer came from the official
