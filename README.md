@@ -15,15 +15,15 @@ creates geotagged copies in a separate output folder.
 - Apply an adjustable camera time offset
 - Interpolate locations between surrounding GPX points
 - Reject interpolation across an unsafe GPX time gap
-- Preview matches in a table and on an OpenStreetMap map
+- Preview matches in a table or on an OpenStreetMap map with a synchronized photo gallery
 - Click a map marker to see a thumbnail of its matched photo
 - Switch between a one-step-at-a-time Guided mode and an All-at-once workspace
 - Save a route as a named outing and reopen it after restarting PhotoTrace
-- Open the current or saved-outing map full screen
+- Open the current or saved-outing map and its gallery full screen
 - Review each saved outing's map, distance, duration, locations, and photo totals
 - Rename or delete saved outings, reopen them for editing, and reconnect moved photos
 - Review elevation gain, average speed, and an elevation profile for each outing
-- Browse a saved outing's photos beside its map and elevation profile
+- Browse a saved outing's photos in a full-width gallery or review its elevation profile
 - Select a gallery photo or map marker to highlight the same route location
 - Display latitude, longitude, elevation, times, and match status
 - Create geotagged JPEG copies without modifying source photos
@@ -37,7 +37,11 @@ creates geotagged copies in a separate output folder.
 - Install from a standard Windows installer with Start menu and desktop shortcuts
 - Switch between light and dark mode from the Appearance menu; your choice is remembered
 
-## Latest checkpoint: 0.3.0
+## Latest checkpoint: 0.3.1
+
+- Added the outing gallery beside Map Preview and to every full-screen map.
+- Replaced the saved Outings page's small duplicate map with a full-width gallery.
+- Made the header workflow controls use proportional widths and a consistent height.
 
 - Added Guided and All-at-once workflows. Guided mode presents file selection,
   camera-time settings, and review as separate steps.
@@ -50,13 +54,13 @@ creates geotagged copies in a separate output folder.
 - Stopped restoring file and folder paths between sessions.
 - Added a desktop shortcut to the self-contained Windows installer.
 
-After building the installer, close PhotoTrace and run `dist\PhotoTrace-Setup-0.3.0-x64.msi`, then
+After building the installer, close PhotoTrace and run `dist\PhotoTrace-Setup-0.3.1-x64.msi`, then
 open PhotoTrace from Start or the desktop shortcut. Saved outings and original photos are retained. If an
 older pinned shortcut still shows a generic icon, unpin it and pin the updated
 PhotoTrace Start menu entry again.
 
-Earlier local test installers were labeled 1.0.x. Windows considers 0.3.0 an
-older version, so uninstall a 1.0.x test build before installing 0.3.0. Uninstalling
+Earlier local test installers were labeled 1.0.x. Windows considers 0.3.1 an
+older version, so uninstall a 1.0.x test build before installing 0.3.1. Uninstalling
 preserves saved outings and original photos. Existing installer files are not
 renamed or rebuilt by a source-code commit.
 
@@ -174,7 +178,7 @@ To build both the portable ZIP and the Windows installer, run:
 .\scripts\build_installer.ps1
 ```
 
-This produces `dist\PhotoTrace-Setup-0.3.0-x64.msi`. The installer adds PhotoTrace
+This produces `dist\PhotoTrace-Setup-0.3.1-x64.msi`. The installer adds PhotoTrace
 to the Windows Start menu, the desktop, and the Installed apps list. By default it
 installs for the current Windows account. Running the same installer again
 offers repair and uninstall options. Installing or

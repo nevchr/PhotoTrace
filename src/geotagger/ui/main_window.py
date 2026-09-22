@@ -18,6 +18,7 @@ from PySide6.QtWidgets import (
     QMessageBox,
     QPushButton,
     QProgressBar,
+    QSizePolicy,
     QSpinBox,
     QTabWidget,
     QVBoxLayout,
@@ -28,7 +29,7 @@ from ..processor import ProcessResult
 from ..trip_store import SavedTrip, TripStore, TripStoreError, create_saved_trip
 from ..version import __version__, resource_path
 from ..workers import PreviewBatch, PreviewWorker, ProcessingWorker
-from .map_view import MapView, show_fullscreen_map
+from .map_view import MapGalleryView, MapView, show_fullscreen_map
 from .preview_table import PreviewTable
 from .saved_trips_view import SavedTripsView
 from .theme import apply_theme, themed_stylesheet
@@ -498,9 +499,13 @@ class MainWindow(QMainWindow):
         brand_layout.addWidget(title)
         brand_layout.addWidget(description)
 
-        local_badge = QLabel("LOCAL WORKFLOW  •  ORIGINALS STAY SAFE")
-        local_badge.setObjectName("localBadge")
-        local_badge.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.local_badge = QLabel("LOCAL WORKFLOW  •  ORIGINALS STAY SAFE")
+        self.local_badge.setObjectName("localBadge")
+        self.local_badge.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.local_badge.setSizePolicy(
+            QSizePolicy.Policy.Expanding,
+            QSizePolicy.Policy.Fixed,
+        )
 
         self.workflow_mode_combo = QComboBox()
         self.workflow_mode_combo.addItem("Guided", "guided")
@@ -509,7 +514,11 @@ class MainWindow(QMainWindow):
         self.workflow_mode_combo.setToolTip(
             "Guided shows one step at a time. All at once shows the full workspace."
         )
-        self.workflow_mode_combo.setMinimumWidth(125)
+        self.workflow_mode_combo.setMinimumWidth(118)
+        self.workflow_mode_combo.setSizePolicy(
+            QSizePolicy.Policy.Expanding,
+            QSizePolicy.Policy.Fixed,
+        )
         workflow_index = self.workflow_mode_combo.findData(self.workflow_mode)
         self.workflow_mode_combo.setCurrentIndex(max(0, workflow_index))
         self.workflow_mode_combo.currentIndexChanged.connect(
@@ -519,13 +528,16 @@ class MainWindow(QMainWindow):
         self.outings_button = QPushButton("Browse outings")
         self.outings_button.setObjectName("compactAction")
         self.outings_button.setToolTip("Open your saved outings")
+        self.outings_button.setSizePolicy(
+            QSizePolicy.Policy.Expanding,
+            QSizePolicy.Policy.Fixed,
+        )
         self.outings_button.clicked.connect(self.open_outings)
 
-        header_layout.addLayout(brand_layout)
-        header_layout.addStretch()
-        header_layout.addWidget(self.workflow_mode_combo)
-        header_layout.addWidget(self.outings_button)
-        header_layout.addWidget(local_badge)
+        header_layout.addLayout(brand_layout, 5)
+        header_layout.addWidget(self.workflow_mode_combo, 2)
+        header_layout.addWidget(self.outings_button, 2)
+        header_layout.addWidget(self.local_badge, 4)
 
         main_layout.addWidget(header_widget)
 
@@ -752,7 +764,9 @@ class MainWindow(QMainWindow):
 
         self.preview_tabs = QTabWidget()
         self.preview_table = PreviewTable()
-        self.map_view = MapView()
+        self.map_preview = MapGalleryView()
+        self.map_view = self.map_preview.map_view
+        self.map_gallery = self.map_preview.photo_gallery
         self.saved_trips_view = SavedTripsView(self.trip_store)
         self.saved_trips_view.open_trip_requested.connect(
             self.load_saved_trip
@@ -761,7 +775,7 @@ class MainWindow(QMainWindow):
         self.saved_trips_view.trip_changed.connect(self.sync_loaded_trip)
         self.saved_trips_view.trip_deleted.connect(self.forget_deleted_trip)
         self.preview_tabs.addTab(self.preview_table, "Photo matches")
-        self.preview_tabs.addTab(self.map_view, "Map preview")
+        self.preview_tabs.addTab(self.map_preview, "Map preview")
         self.saved_trips_tab_index = self.preview_tabs.addTab(
             self.saved_trips_view,
             "Outings",
@@ -889,6 +903,7 @@ class MainWindow(QMainWindow):
         self.setStyleSheet(themed_stylesheet(APP_STYLESHEET, mode))
         self.theme_actions[mode].setChecked(True)
         self.preview_table.refresh_theme()
+        self.map_gallery.refresh_theme()
         self.saved_trips_view.photo_gallery.refresh_theme()
         for map_view in self.findChildren(MapView):
             map_view.set_theme(mode)
@@ -1188,7 +1203,7 @@ class MainWindow(QMainWindow):
             0
         )
 
-        self.map_view.show_empty_map()
+        self.map_preview.show_empty_map()
 
         self.process_button.setEnabled(
             False
@@ -1355,7 +1370,7 @@ class MainWindow(QMainWindow):
             self.preview_results,
             timedelta(seconds=trip.time_offset_seconds),
         )
-        self.map_view.set_results(self.track_points, self.preview_results)
+        self.map_preview.set_results(self.track_points, self.preview_results)
 
         matched = sum(result.matched for result in self.preview_results)
         self.process_button.setEnabled(matched > 0)
@@ -1388,7 +1403,7 @@ class MainWindow(QMainWindow):
             self.preview_results,
             self.get_time_offset(),
         )
-        self.map_view.set_results(self.track_points, self.preview_results)
+        self.map_preview.set_results(self.track_points, self.preview_results)
 
     def forget_deleted_trip(self, trip_id: str) -> None:
         if self.loaded_trip_id != trip_id:
@@ -1510,7 +1525,7 @@ class MainWindow(QMainWindow):
                 self.preview_results,
                 self.get_time_offset(),
             )
-            self.map_view.set_results(
+            self.map_preview.set_results(
                 self.track_points,
                 self.preview_results,
             )

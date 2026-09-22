@@ -12,6 +12,7 @@ from PySide6.QtGui import QFontDatabase, QImage, QPainter
 from PySide6.QtWidgets import QApplication
 
 from src.geotagger.ui.main_window import MainWindow
+from src.geotagger.ui.map_view import FullscreenMapDialog
 from src.geotagger.trip_store import TripStore
 
 
@@ -42,20 +43,41 @@ if len(sys.argv) >= 8:
 if len(sys.argv) >= 9:
     window.guided_step = int(sys.argv[8])
     window._update_workflow_visibility()
-window.ensurePolished()
+preview_flags = set(sys.argv[9:])
+if "load-first" in preview_flags:
+    trips = trip_store.load_trips() if trip_store is not None else []
+    if trips:
+        window.load_saved_trip(trips[0])
+        if len(sys.argv) >= 5:
+            window.preview_tabs.setCurrentIndex(int(sys.argv[4]))
+if "dark" in preview_flags:
+    window.set_theme("dark", persist=False)
+
+render_target = window
+if "fullscreen" in preview_flags:
+    render_target = FullscreenMapDialog(
+        window,
+        window.track_points,
+        window.preview_results,
+        title="PhotoTrace outing map",
+    )
+    render_target.resize(int(sys.argv[2]), int(sys.argv[3]))
+
+render_target.ensurePolished()
 app.processEvents()
 
 output_path = Path(sys.argv[1]).resolve()
 output_path.parent.mkdir(parents=True, exist_ok=True)
 
-image = QImage(window.size(), QImage.Format.Format_ARGB32)
+image = QImage(render_target.size(), QImage.Format.Format_ARGB32)
 image.fill(0xFFFFFFFF)
 painter = QPainter(image)
-window.render(painter, QPoint())
+render_target.render(painter, QPoint())
 painter.end()
 
 if not image.save(str(output_path), "PNG"):
     raise RuntimeError("The UI preview image could not be saved.")
 
+render_target.close()
 window.close()
 preview_temp.cleanup()

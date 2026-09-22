@@ -7,7 +7,9 @@ from PySide6.QtWebEngineWidgets import QWebEngineView
 from PySide6.QtWidgets import (
     QApplication,
     QDialog,
+    QFrame,
     QHBoxLayout,
+    QLabel,
     QPushButton,
     QVBoxLayout,
     QWidget,
@@ -16,6 +18,7 @@ from PySide6.QtWidgets import (
 from ..gpx_parser import TrackPoint
 from ..image_preview import create_photo_preview_data_uri
 from ..preview import PreviewResult
+from .photo_gallery import PhotoGallery
 from .theme import map_stylesheet
 
 
@@ -24,6 +27,75 @@ class PhotoBridge(QObject):
 
     @Slot(int)
     def selectPhoto(self, photo_index: int) -> None:
+        self.photo_selected.emit(photo_index)
+
+
+class MapGalleryView(QWidget):
+    """Keep a route map and its photo gallery together and synchronized."""
+
+    photo_selected = Signal(int)
+
+    def __init__(self):
+        super().__init__()
+
+        self.preview_results: list[PreviewResult] = []
+        self.map_view = MapView()
+        self.photo_gallery = PhotoGallery()
+
+        gallery_panel = QFrame()
+        gallery_panel.setObjectName("tripGalleryPanel")
+        gallery_layout = QVBoxLayout(gallery_panel)
+        gallery_layout.setContentsMargins(10, 10, 10, 9)
+        gallery_layout.setSpacing(5)
+
+        gallery_title = QLabel("Outing gallery")
+        gallery_title.setObjectName("tripGalleryTitle")
+        gallery_help = QLabel("Select a photo to find it on the route")
+        gallery_help.setObjectName("tripGalleryHelp")
+        gallery_help.setWordWrap(True)
+        gallery_layout.addWidget(gallery_title)
+        gallery_layout.addWidget(gallery_help)
+        gallery_layout.addWidget(self.photo_gallery, 1)
+
+        layout = QHBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(9)
+        layout.addWidget(self.map_view, 5)
+        layout.addWidget(gallery_panel, 3)
+
+        self.photo_gallery.photo_selected.connect(
+            self._gallery_photo_selected
+        )
+        self.map_view.photo_selected.connect(self._map_photo_selected)
+
+    def set_results(
+        self,
+        track_points: list[TrackPoint],
+        preview_results: list[PreviewResult],
+    ) -> None:
+        self.preview_results = list(preview_results)
+        self.map_view.set_results(track_points, preview_results)
+        self.photo_gallery.set_results(preview_results)
+
+    def show_empty_map(
+        self,
+        message: str = "Preview photos to display the map.",
+    ) -> None:
+        self.preview_results = []
+        self.map_view.show_empty_map(message)
+        self.photo_gallery.set_results([])
+
+    def _gallery_photo_selected(self, photo_index: int) -> None:
+        if not 0 <= photo_index < len(self.preview_results):
+            return
+        if self.preview_results[photo_index].matched:
+            self.map_view.focus_photo(photo_index)
+        self.photo_selected.emit(photo_index)
+
+    def _map_photo_selected(self, photo_index: int) -> None:
+        if not 0 <= photo_index < len(self.preview_results):
+            return
+        self.photo_gallery.select_photo(photo_index)
         self.photo_selected.emit(photo_index)
 
 
@@ -51,11 +123,13 @@ class FullscreenMapDialog(QDialog):
         close_button.clicked.connect(self.accept)
         controls.addWidget(close_button)
 
-        self.map_view = MapView()
-        self.map_view.set_results(track_points, preview_results)
+        self.map_gallery_view = MapGalleryView()
+        self.map_view = self.map_gallery_view.map_view
+        self.photo_gallery = self.map_gallery_view.photo_gallery
+        self.map_gallery_view.set_results(track_points, preview_results)
 
         layout.addLayout(controls)
-        layout.addWidget(self.map_view, 1)
+        layout.addWidget(self.map_gallery_view, 1)
 
 
 def show_fullscreen_map(

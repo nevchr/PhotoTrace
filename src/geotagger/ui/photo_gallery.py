@@ -68,6 +68,11 @@ class PhotoGallery(QListWidget):
             item.setForeground(QColor(colors[
                 "accent" if self.results[index].matched else "negative"
             ]))
+            image = _read_thumbnail(
+                self.results[index].source_path,
+                self.iconSize(),
+            )
+            item.setIcon(QIcon(image or _placeholder_pixmap(self.iconSize())))
 
     def select_photo(self, index: int) -> None:
         item = self.items_by_index.get(index)
@@ -119,7 +124,7 @@ def _read_thumbnail(photo_path: Path, size: QSize) -> QPixmap | None:
         return None
 
     canvas = QPixmap(size)
-    canvas.fill(QColor("#edf3f0"))
+    canvas.fill(QColor(theme_colors()["raised"]))
     pixmap = QPixmap.fromImage(image)
     x = (size.width() - pixmap.width()) // 2
     y = (size.height() - pixmap.height()) // 2
@@ -131,10 +136,11 @@ def _read_thumbnail(photo_path: Path, size: QSize) -> QPixmap | None:
 
 def _placeholder_pixmap(size: QSize) -> QPixmap:
     pixmap = QPixmap(size)
-    pixmap.fill(QColor("#edf3f0"))
+    colors = theme_colors()
+    pixmap.fill(QColor(colors["raised"]))
     painter = QPainter(pixmap)
     painter.setRenderHint(QPainter.RenderHint.Antialiasing)
-    painter.setPen(QPen(QColor("#8aa196"), 2))
+    painter.setPen(QPen(QColor(colors["muted"]), 2))
     frame = pixmap.rect().adjusted(44, 27, -44, -27)
     painter.drawRoundedRect(frame, 5, 5)
     painter.drawEllipse(frame.center(), 9, 9)

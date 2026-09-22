@@ -13,13 +13,24 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 from PySide6.QtCore import QSettings
 from PySide6.QtGui import QColor, QPalette
-from PySide6.QtWidgets import QApplication, QMessageBox, QInputDialog
+from PySide6.QtWidgets import (
+    QApplication,
+    QMessageBox,
+    QInputDialog,
+    QSizePolicy,
+    QWidget,
+)
 
 from src.geotagger.preview import PreviewResult
 from src.geotagger.gpx_parser import TrackPoint
 from src.geotagger.trip_store import TripStore
 from src.geotagger.ui.main_window import MainWindow
-from src.geotagger.ui.map_view import MapView, PhotoBridge
+from src.geotagger.ui.map_view import (
+    FullscreenMapDialog,
+    MapGalleryView,
+    MapView,
+    PhotoBridge,
+)
 from src.geotagger.ui.theme import THEMES, theme_colors, themed_stylesheet
 from src.geotagger.ui.main_window import APP_STYLESHEET
 
@@ -79,6 +90,18 @@ def test_window_presents_guided_three_step_workflow(qt_app, tmp_path):
         assert window.status_label.property("kind") == "neutral"
         assert window.timezone_combo.findText("Pacific/Auckland") >= 0
         assert window.timezone_combo.count() > 400
+        assert (
+            window.workflow_mode_combo.sizePolicy().horizontalPolicy()
+            == QSizePolicy.Policy.Expanding
+        )
+        assert (
+            window.outings_button.sizePolicy().horizontalPolicy()
+            == QSizePolicy.Policy.Expanding
+        )
+        assert (
+            window.local_badge.sizePolicy().verticalPolicy()
+            == QSizePolicy.Policy.Fixed
+        )
 
         window.set_workflow_mode("all")
         assert window.files_card.isHidden() is False
@@ -198,11 +221,8 @@ def test_named_trip_can_be_saved_and_viewed_after_reload(
         window.preview_tabs.setCurrentIndex(window.saved_trips_tab_index)
         window.saved_trips_view.photo_gallery.photo_selected.emit(0)
         assert window.saved_trips_view.elevation_profile.selected_distance is not None
-        window.saved_trips_view.map_view.photo_selected.emit(0)
-        assert (
-            window.saved_trips_view.photo_gallery.currentItem().text()
-            == "trail.jpg"
-        )
+        assert window.saved_trips_view.visual_tabs.tabText(0) == "Outing gallery"
+        assert window.saved_trips_view.findChildren(MapView) == []
 
         monkeypatch.setattr(
             "src.geotagger.ui.saved_trips_view.QInputDialog.getText",
@@ -305,6 +325,72 @@ def test_map_marker_selection_is_sent_back_to_the_gallery(qt_app):
     bridge.photo_selected.connect(selected.append)
     bridge.selectPhoto(4)
     assert selected == [4]
+
+
+def test_map_gallery_keeps_map_and_photos_synchronized(
+    qt_app,
+    monkeypatch,
+):
+    start = datetime.fromisoformat("2026-09-04T13:00:00+00:00")
+    results = [
+        PreviewResult(
+            Path("photo.jpg"),
+            start,
+            start,
+            43.64,
+            -79.38,
+            78.0,
+            True,
+            "Matched",
+        )
+    ]
+    view = MapGalleryView()
+    focused = []
+    monkeypatch.setattr(view.map_view, "focus_photo", focused.append)
+    try:
+        view.set_results(
+            [TrackPoint(43.64, -79.38, 78.0, start)],
+            results,
+        )
+        assert view.photo_gallery.count() == 1
+
+        view.photo_gallery.photo_selected.emit(0)
+        assert focused == [0]
+
+        view.map_view.photo_selected.emit(0)
+        assert view.photo_gallery.currentItem().text() == "photo.jpg"
+    finally:
+        view.close()
+
+
+def test_fullscreen_map_includes_outing_gallery(qt_app):
+    start = datetime.fromisoformat("2026-09-04T13:00:00+00:00")
+    results = [
+        PreviewResult(
+            Path("photo.jpg"),
+            start,
+            start,
+            43.64,
+            -79.38,
+            78.0,
+            True,
+            "Matched",
+        )
+    ]
+    parent = QWidget()
+    dialog = FullscreenMapDialog(
+        parent,
+        [TrackPoint(43.64, -79.38, 78.0, start)],
+        results,
+        title="Test outing map",
+    )
+    try:
+        assert dialog.windowTitle() == "Test outing map"
+        assert dialog.photo_gallery.count() == 1
+        assert dialog.map_gallery_view.map_view is dialog.map_view
+    finally:
+        dialog.close()
+        parent.close()
 
 
 def test_map_click_before_page_ready_is_replayed(qt_app, monkeypatch):
@@ -458,6 +544,7 @@ def test_theme_switch_updates_existing_results_and_survives_restart(qt_app, tmp_
     window = create_test_window(tmp_path)
     results = [PreviewResult(Path("photo.jpg"), None, None, 43., -79., 0., True, "Matched")]
     window.preview_table.set_results(results)
+    window.map_gallery.set_results(results)
     window.saved_trips_view.photo_gallery.set_results(results)
     try:
         assert not window.windowIcon().isNull()
@@ -469,9 +556,14 @@ def test_theme_switch_updates_existing_results_and_survives_restart(qt_app, tmp_
             assert window.theme_mode == mode
             assert window.theme_actions[mode].isChecked()
             assert window.preview_table.item(0, 6).foreground().color().name() == colors["accent"]
+            assert window.map_gallery.item(0).foreground().color().name() == colors["accent"]
+            assert (
+                window.map_gallery.item(0).icon().pixmap(138, 92)
+                .toImage().pixelColor(0, 0).name()
+                == colors["raised"]
+            )
             assert window.saved_trips_view.photo_gallery.item(0).foreground().color().name() == colors["accent"]
             assert window.map_view.theme_mode == mode
-            assert window.saved_trips_view.map_view.theme_mode == mode
             assert window.preview_table.rowCount() == 1
             window.gpx_field.ensurePolished()
             assert window.gpx_field.palette().color(QPalette.ColorRole.PlaceholderText).name() == colors["muted"]

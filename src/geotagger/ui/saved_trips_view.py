@@ -20,7 +20,7 @@ from PySide6.QtWidgets import (
 
 from ..trip_store import SavedTrip, TripStore, TripStoreError
 from .elevation_profile import ElevationProfile
-from .map_view import MapView, show_fullscreen_map
+from .map_view import show_fullscreen_map
 from .photo_gallery import PhotoGallery
 
 
@@ -203,18 +203,14 @@ class SavedTripsView(QWidget):
 
         details_layout.addWidget(route_details)
 
-        self.map_view = MapView()
         self.elevation_profile = ElevationProfile()
         self.photo_gallery = PhotoGallery()
         self.photo_gallery.photo_selected.connect(self._gallery_photo_selected)
-        self.map_view.photo_selected.connect(self._map_photo_selected)
 
         gallery_panel = QFrame()
         gallery_panel.setObjectName("tripGalleryPanel")
-        gallery_panel.setMinimumWidth(180)
-        gallery_panel.setMaximumWidth(215)
         gallery_layout = QVBoxLayout(gallery_panel)
-        gallery_layout.setContentsMargins(8, 9, 8, 8)
+        gallery_layout.setContentsMargins(10, 10, 10, 9)
         gallery_layout.setSpacing(5)
         gallery_title = QLabel("Outing gallery")
         gallery_title.setObjectName("tripGalleryTitle")
@@ -227,15 +223,11 @@ class SavedTripsView(QWidget):
 
         self.visual_tabs = QTabWidget()
         self.visual_tabs.setObjectName("tripVisualTabs")
-        self.visual_tabs.addTab(self.map_view, "Route map")
+        self.visual_tabs.addTab(gallery_panel, "Outing gallery")
         self.visual_tabs.addTab(self.elevation_profile, "Elevation profile")
         self.visual_tabs.setMinimumHeight(210)
 
-        visual_layout = QHBoxLayout()
-        visual_layout.setSpacing(9)
-        visual_layout.addWidget(gallery_panel)
-        visual_layout.addWidget(self.visual_tabs, 1)
-        details_layout.addLayout(visual_layout, 1)
+        details_layout.addWidget(self.visual_tabs, 1)
 
         content = QWidget()
         content_layout = QVBoxLayout(content)
@@ -279,7 +271,6 @@ class SavedTripsView(QWidget):
             self.empty_label.setText(str(error))
             self.empty_label.show()
             self.details_widget.hide()
-            self.map_view.show_empty_map("Saved outings could not be loaded.")
             self.elevation_profile.set_track_points([])
             self.photo_gallery.set_results([])
             return False
@@ -309,7 +300,6 @@ class SavedTripsView(QWidget):
             )
             self.empty_label.show()
             self.details_widget.hide()
-            self.map_view.show_empty_map("Select a saved outing to view its route.")
             self.elevation_profile.set_track_points([])
             self.photo_gallery.set_results([])
             return True
@@ -367,7 +357,6 @@ class SavedTripsView(QWidget):
         self.file_status_label.style().polish(self.file_status_label)
         self.reconnect_button.setEnabled(bool(trip.preview_results))
         self.fullscreen_button.setEnabled(bool(trip.track_points))
-        self.map_view.set_results(trip.track_points, trip.preview_results)
         self.elevation_profile.set_track_points(trip.track_points)
         self.photo_gallery.set_results(trip.preview_results)
 
@@ -378,21 +367,6 @@ class SavedTripsView(QWidget):
             return
 
         result = self.current_trip.preview_results[photo_index]
-        self.elevation_profile.focus_location(
-            result.latitude,
-            result.longitude,
-        )
-        if result.matched:
-            self.map_view.focus_photo(photo_index)
-
-    def _map_photo_selected(self, photo_index: int) -> None:
-        if self.current_trip is None:
-            return
-        if not 0 <= photo_index < len(self.current_trip.preview_results):
-            return
-
-        result = self.current_trip.preview_results[photo_index]
-        self.photo_gallery.select_photo(photo_index)
         self.elevation_profile.focus_location(
             result.latitude,
             result.longitude,
