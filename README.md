@@ -6,6 +6,24 @@ matching their EXIF capture timestamps against a GPX track.
 Source photos are never modified. PhotoTrace previews every match first and
 creates geotagged copies in a separate output folder.
 
+## Install on a Fresh Windows PC
+
+No Python, Git, developer tools, or extra downloads are required.
+
+1. Open the [latest PhotoTrace release](https://github.com/nevchr/PhotoTrace/releases/latest).
+2. Download `PhotoTrace-Setup-0.3.1-x64.msi`.
+3. Double-click the downloaded installer and follow the Windows prompts.
+4. Open PhotoTrace from the desktop shortcut or Start menu.
+
+The installer is not digitally signed yet, so Windows may show an
+**Unknown publisher** warning. Check that the installer came from the official
+release above and that its SHA-256 value matches the included `.sha256` file
+before continuing.
+
+For a portable copy, download `PhotoTrace-windows-x64.zip`, extract the whole
+folder, and then open `PhotoTrace.exe`. Do not move the EXE away from its
+`_internal` folder.
+
 ## Current Features
 
 - Load timestamped GPX tracks
