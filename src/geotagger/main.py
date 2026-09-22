@@ -35,12 +35,12 @@ def main(
 
     configure_windows_identity()
     app = QApplication(app_arguments)
-    app.setApplicationName("TrailTag")
-    app.setApplicationDisplayName("TrailTag")
+    app.setApplicationName("PhotoTrace")
+    app.setApplicationDisplayName("PhotoTrace")
     app.setApplicationVersion(__version__)
-    app.setOrganizationName("TrailTag")
+    app.setOrganizationName("PhotoTrace")
 
-    icon_path = resource_path("packaging", "trailtag.ico")
+    icon_path = resource_path("packaging", "phototrace.ico")
     if icon_path.is_file():
         app.setWindowIcon(QIcon(str(icon_path)))
 
@@ -63,7 +63,7 @@ def main(
     mark("window-created")
 
     if smoke_test:
-        if window.windowTitle() != "TrailTag":
+        if window.windowTitle() != "PhotoTrace":
             raise RuntimeError(
                 "The packaged window did not initialize correctly."
             )

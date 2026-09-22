@@ -1,4 +1,4 @@
-"""TrailTag release metadata and packaged-resource helpers."""
+"""PhotoTrace release metadata and packaged-resource helpers."""
 
 import sys
 from pathlib import Path

@@ -9,6 +9,7 @@ from src.geotagger.trip_store import (
     TripStore,
     TripStoreError,
     create_saved_trip,
+    default_trip_store_path,
 )
 
 
@@ -49,7 +50,7 @@ def _sample_trip():
 
 
 def test_saved_trip_survives_store_reload(tmp_path):
-    store_path = tmp_path / "TrailTag" / "trips.json"
+    store_path = tmp_path / "PhotoTrace" / "outings.json"
     store = TripStore(store_path)
     trip = _sample_trip()
 
@@ -85,6 +86,25 @@ def test_store_keeps_multiple_named_trips_newest_first(tmp_path):
     assert [trip.name for trip in store.load_trips()] == [
         "Evening walk",
         "Morning walk",
+    ]
+
+
+def test_default_store_copies_legacy_outings_to_phototrace(
+    tmp_path,
+    monkeypatch,
+):
+    monkeypatch.setenv("LOCALAPPDATA", str(tmp_path))
+    legacy_path = tmp_path / ("Trail" + "Tag") / "trips.json"
+    legacy_store = TripStore(legacy_path)
+    legacy_store.save_trip(_sample_trip())
+
+    new_path = default_trip_store_path()
+
+    assert new_path == tmp_path / "PhotoTrace" / "outings.json"
+    assert legacy_path.is_file()
+    assert new_path.is_file()
+    assert [trip.name for trip in TripStore(new_path).load_trips()] == [
+        "Toronto waterfront"
     ]
 
 

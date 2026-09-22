@@ -1,9 +1,9 @@
-# TrailTag
+# PhotoTrace
 
-TrailTag is a desktop application that adds GPS coordinates to photos by
+PhotoTrace is a desktop application that adds GPS coordinates to photos by
 matching their EXIF capture timestamps against a GPX track.
 
-Source photos are never modified. TrailTag previews every match first and
+Source photos are never modified. PhotoTrace previews every match first and
 creates geotagged copies in a separate output folder.
 
 ## Current Features
@@ -18,7 +18,7 @@ creates geotagged copies in a separate output folder.
 - Preview matches in a table and on an OpenStreetMap map
 - Click a map marker to see a thumbnail of its matched photo
 - Switch between a one-step-at-a-time Guided mode and an All-at-once workspace
-- Save a route as a named outing and reopen it after restarting TrailTag
+- Save a route as a named outing and reopen it after restarting PhotoTrace
 - Open the current or saved-outing map full screen
 - Review each saved outing's map, distance, duration, locations, and photo totals
 - Rename or delete saved outings, reopen them for editing, and reconnect moved photos
@@ -50,10 +50,10 @@ creates geotagged copies in a separate output folder.
 - Stopped restoring file and folder paths between sessions.
 - Added a desktop shortcut to the self-contained Windows installer.
 
-After building the installer, close TrailTag and run `dist\TrailTag-Setup-0.3.0-x64.msi`, then
-open TrailTag from Start or the desktop shortcut. Saved outings and original photos are retained. If an
+After building the installer, close PhotoTrace and run `dist\PhotoTrace-Setup-0.3.0-x64.msi`, then
+open PhotoTrace from Start or the desktop shortcut. Saved outings and original photos are retained. If an
 older pinned shortcut still shows a generic icon, unpin it and pin the updated
-TrailTag Start menu entry again.
+PhotoTrace Start menu entry again.
 
 Earlier local test installers were labeled 1.0.x. Windows considers 0.3.0 an
 older version, so uninstall a 1.0.x test build before installing 0.3.0. Uninstalling
@@ -70,18 +70,18 @@ renamed or rebuilt by a source-code commit.
 6. Save the route as a named outing if you want to revisit it later.
 7. Create the geotagged copies.
 
-TrailTag finds the GPX points immediately before and after each photo's
+PhotoTrace finds the GPX points immediately before and after each photo's
 adjusted timestamp, then interpolates the position between those points.
 
-Saved outings are stored locally in your Windows app-data folder. TrailTag keeps
+Saved outings are stored locally in your Windows app-data folder. PhotoTrace keeps
 a snapshot of the route and match details so the outing map and statistics remain
 available after the app closes. Photo thumbnails remain linked to the original
 photo files, so a thumbnail may become unavailable if its source photo is moved
 or deleted. Use **Reconnect photos** in Outings after moving a photo folder.
-Deleting a saved outing removes only TrailTag's saved record; it never deletes the
+Deleting a saved outing removes only PhotoTrace's saved record; it never deletes the
 original GPX track or photos.
 
-## Run TrailTag
+## Run PhotoTrace
 
 Create and activate a Python 3.12 virtual environment, then install the
 dependencies:
@@ -165,8 +165,8 @@ Then run the repeatable build script:
 
 The script runs the tests first, builds the application in a temporary staging
 folder, verifies that its window starts correctly, and creates
-`dist\TrailTag-windows-x64.zip`. The ZIP contains the complete application;
-extract it before opening `TrailTag.exe`.
+`dist\PhotoTrace-windows-x64.zip`. The ZIP contains the complete application;
+extract it before opening `PhotoTrace.exe`.
 
 To build both the portable ZIP and the Windows installer, run:
 
@@ -174,7 +174,7 @@ To build both the portable ZIP and the Windows installer, run:
 .\scripts\build_installer.ps1
 ```
 
-This produces `dist\TrailTag-Setup-0.3.0-x64.msi`. The installer adds TrailTag
+This produces `dist\PhotoTrace-Setup-0.3.0-x64.msi`. The installer adds PhotoTrace
 to the Windows Start menu, the desktop, and the Installed apps list. By default it
 installs for the current Windows account. Running the same installer again
 offers repair and uninstall options. Installing or
@@ -190,8 +190,8 @@ checksum file. The checksum can be used to verify that a downloaded package
 has not changed.
 
 Installer verification is available with `scripts\test_installer.ps1`.
-It installs, starts, repairs, and uninstalls a temporary TrailTag installation,
-checking that saved outings stay unchanged. It refuses to run if TrailTag is
+It installs, starts, repairs, and uninstalls a temporary PhotoTrace installation,
+checking that saved outings stay unchanged. It refuses to run if PhotoTrace is
 already installed so it cannot replace an existing installation.
 
 The local release artifacts are not digitally signed. Windows may show an
@@ -200,5 +200,5 @@ for a public release.
 
 The map requires an internet connection because it loads Leaflet and
 OpenStreetMap map tiles at runtime. Photo matching and EXIF writing remain
-local. TrailTag does not contain an API key, password, or other service
+local. PhotoTrace does not contain an API key, password, or other service
 credential; it uses public Leaflet and OpenStreetMap endpoints for map display.

@@ -1,4 +1,4 @@
-"""Create TrailTag's deterministic Windows and application icons."""
+"""Create PhotoTrace's deterministic Windows and application icons."""
 
 from pathlib import Path
 
@@ -7,8 +7,8 @@ from PIL import Image, ImageDraw
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 PACKAGING_DIRECTORY = PROJECT_ROOT / "packaging"
-PNG_PATH = PACKAGING_DIRECTORY / "trailtag.png"
-ICON_PATH = PACKAGING_DIRECTORY / "trailtag.ico"
+PNG_PATH = PACKAGING_DIRECTORY / "phototrace.png"
+ICON_PATH = PACKAGING_DIRECTORY / "phototrace.ico"
 
 
 def main() -> None:

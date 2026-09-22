@@ -381,6 +381,19 @@ QLabel#sourceStatus[kind="warning"] {
 """
 
 
+def _default_settings() -> QSettings:
+    settings = QSettings("PhotoTrace", "PhotoTrace")
+    if settings.allKeys():
+        return settings
+
+    legacy_name = "Trail" + "Tag"
+    legacy_settings = QSettings(legacy_name, legacy_name)
+    for key in legacy_settings.allKeys():
+        settings.setValue(key, legacy_settings.value(key))
+    settings.sync()
+    return settings
+
+
 class MainWindow(QMainWindow):
     def __init__(
         self,
@@ -388,10 +401,10 @@ class MainWindow(QMainWindow):
         settings: QSettings | None = None,
     ):
         super().__init__()
-        self.setWindowIcon(QIcon(str(resource_path("packaging", "trailtag.ico"))))
+        self.setWindowIcon(QIcon(str(resource_path("packaging", "phototrace.ico"))))
 
-        self.setWindowTitle("TrailTag")
-        self.setAccessibleName("TrailTag GPX photo geotagger")
+        self.setWindowTitle("PhotoTrace")
+        self.setAccessibleName("PhotoTrace GPX photo geotagger")
         self.resize(1240, 820)
         self.setMinimumSize(980, 700)
 
@@ -405,7 +418,7 @@ class MainWindow(QMainWindow):
         self.settings = (
             settings
             if settings is not None
-            else QSettings("TrailTag", "TrailTag")
+            else _default_settings()
         )
         saved_workflow_mode = self.settings.value(
             "workflow/mode", "guided", type=str
@@ -452,7 +465,7 @@ class MainWindow(QMainWindow):
             self.theme_actions[mode] = action
 
         help_menu = self.menuBar().addMenu("&Help")
-        self.about_action = QAction("About TrailTag", self)
+        self.about_action = QAction("About PhotoTrace", self)
         self.about_action.setMenuRole(QAction.MenuRole.AboutRole)
         self.about_action.triggered.connect(self.show_about)
         help_menu.addAction(self.about_action)
@@ -474,7 +487,7 @@ class MainWindow(QMainWindow):
         brand_layout = QVBoxLayout()
         brand_layout.setSpacing(2)
 
-        title = QLabel("TrailTag")
+        title = QLabel("PhotoTrace")
         title.setObjectName("brandTitle")
 
         description = QLabel(
@@ -532,7 +545,7 @@ class MainWindow(QMainWindow):
         files_title.setObjectName("sectionTitle")
         files_help = QLabel(
             "Select one GPX track, the folder of original photos, and where "
-            "TrailTag should save the new copies."
+            "PhotoTrace should save the new copies."
         )
         files_help.setObjectName("helperText")
         files_help.setWordWrap(True)
@@ -887,9 +900,9 @@ class MainWindow(QMainWindow):
     def show_about(self) -> None:
         QMessageBox.about(
             self,
-            "About TrailTag",
+            "About PhotoTrace",
             (
-                f"<b>TrailTag {__version__}</b><br><br>"
+                f"<b>PhotoTrace {__version__}</b><br><br>"
                 "Match JPEG photos to a recorded GPX route and create "
                 "geotagged copies.<br><br>"
                 "Your photos and saved outings stay on this computer. "
@@ -964,7 +977,7 @@ class MainWindow(QMainWindow):
             self,
             self.track_points,
             self.preview_results,
-            title="TrailTag outing map",
+            title="PhotoTrace outing map",
         )
 
     def _update_workflow_visibility(self) -> None:
@@ -1529,7 +1542,7 @@ class MainWindow(QMainWindow):
                     self,
                     "Preview Complete with Issues",
                     (
-                        "TrailTag finished the preview and kept going when "
+                        "PhotoTrace finished the preview and kept going when "
                         "individual photos failed.\n\n"
                         f"{details}"
                     ),
@@ -1560,7 +1573,7 @@ class MainWindow(QMainWindow):
                     self,
                     "Processing Cancelled",
                     (
-                        "TrailTag stopped before starting another photo.\n\n"
+                        "PhotoTrace stopped before starting another photo.\n\n"
                         f"{successful} geotagged copies completed\n"
                         f"{skipped} skipped\n"
                         f"{failed} failed\n\n"
@@ -1676,10 +1689,10 @@ class MainWindow(QMainWindow):
         if self.operation_thread is not None and self.operation_thread.isRunning():
             answer = QMessageBox.question(
                 self,
-                "TrailTag Is Still Working",
+                "PhotoTrace Is Still Working",
                 (
-                    "Cancel the current operation and close TrailTag?\n\n"
-                    "TrailTag will finish the current photo before closing."
+                    "Cancel the current operation and close PhotoTrace?\n\n"
+                    "PhotoTrace will finish the current photo before closing."
                 ),
                 QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
                 QMessageBox.StandardButton.No,

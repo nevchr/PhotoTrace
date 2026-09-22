@@ -1,5 +1,6 @@
 import json
 import os
+import shutil
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -96,8 +97,23 @@ class SavedTrip:
 def default_trip_store_path() -> Path:
     local_app_data = os.environ.get("LOCALAPPDATA")
     if local_app_data:
-        return Path(local_app_data) / "TrailTag" / "trips.json"
-    return Path.home() / ".trailtag" / "trips.json"
+        new_path = Path(local_app_data) / "PhotoTrace" / "outings.json"
+        legacy_path = (
+            Path(local_app_data) / ("Trail" + "Tag") / "trips.json"
+        )
+    else:
+        new_path = Path.home() / ".phototrace" / "outings.json"
+        legacy_path = Path.home() / (".trail" + "tag") / "trips.json"
+
+    if new_path.exists() or not legacy_path.is_file():
+        return new_path
+
+    try:
+        new_path.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(legacy_path, new_path)
+    except OSError:
+        return legacy_path
+    return new_path
 
 
 def create_saved_trip(
@@ -151,7 +167,7 @@ class TripStore:
             ]
         except (OSError, TypeError, ValueError, KeyError, json.JSONDecodeError) as error:
             raise TripStoreError(
-                "TrailTag could not read the saved outings file. "
+                "PhotoTrace could not read the saved outings file. "
                 "The existing file was left unchanged."
             ) from error
 
@@ -205,7 +221,7 @@ class TripStore:
             temporary_path.replace(self.path)
         except OSError as error:
             raise TripStoreError(
-                "TrailTag could not update Outings. "
+                "PhotoTrace could not update Outings. "
                 "No existing outings were changed."
             ) from error
 

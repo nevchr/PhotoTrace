@@ -8,7 +8,7 @@ def test_load_gpx_sorts_points_and_skips_missing_timestamps(tmp_path):
     gpx_path = tmp_path / "track.gpx"
     gpx_path.write_text(
         """<?xml version="1.0" encoding="UTF-8"?>
-<gpx version="1.1" creator="TrailTag tests"
+<gpx version="1.1" creator="PhotoTrace tests"
      xmlns="http://www.topografix.com/GPX/1/1">
   <trk><trkseg>
     <trkpt lat="45.2" lon="-75.2"><time>2026-01-01T15:00:30Z</time></trkpt>

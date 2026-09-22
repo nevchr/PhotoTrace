@@ -50,7 +50,7 @@ def test_matching_setting_change_invalidates_preview(qt_app, tmp_path):
 
         window.offset_seconds.setValue(1)
 
-        assert window.windowTitle() == "TrailTag"
+        assert window.windowTitle() == "PhotoTrace"
         assert window.preview_results == []
         assert window.process_button.isEnabled() is False
         assert window.save_trip_button.isEnabled() is False
@@ -245,7 +245,7 @@ def test_preview_runs_in_background_with_visible_progress(qt_app, tmp_path):
     gpx_path = tmp_path / "route.gpx"
     gpx_path.write_text(
         """<?xml version="1.0" encoding="UTF-8"?>
-<gpx version="1.1" creator="TrailTag test"
+<gpx version="1.1" creator="PhotoTrace test"
      xmlns="http://www.topografix.com/GPX/1/1">
   <trk><trkseg>
     <trkpt lat="43.6400" lon="-79.3800">

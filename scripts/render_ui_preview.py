@@ -25,7 +25,7 @@ trip_store = None
 if len(sys.argv) >= 6:
     trip_store = TripStore(Path(sys.argv[5]))
 
-preview_temp = tempfile.TemporaryDirectory(prefix="trailtag-ui-")
+preview_temp = tempfile.TemporaryDirectory(prefix="phototrace-ui-")
 settings = QSettings(
     str(Path(preview_temp.name) / "settings.ini"),
     QSettings.Format.IniFormat,

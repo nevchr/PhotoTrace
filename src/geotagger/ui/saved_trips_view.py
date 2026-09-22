@@ -465,7 +465,7 @@ class SavedTripsView(QWidget):
             self,
             "Delete Saved Outing",
             (
-                f'Delete “{trip.name}” from TrailTag?\n\n'
+                f'Delete “{trip.name}” from PhotoTrace?\n\n'
                 "Your GPX and photo files will not be deleted."
             ),
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
@@ -511,7 +511,7 @@ class SavedTripsView(QWidget):
             QMessageBox.warning(
                 self,
                 "Photos Not Found",
-                "TrailTag could not find any of this outing's photos in that folder.",
+                "PhotoTrace could not find any of this outing's photos in that folder.",
             )
             return
 

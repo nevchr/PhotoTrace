@@ -1,61 +1,61 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
   <Package
-      Name="TrailTag"
-      Manufacturer="TrailTag"
+      Name="PhotoTrace"
+      Manufacturer="PhotoTrace"
       Version="$(var.AppVersion)"
       Language="1033"
       Scope="perUserOrMachine"
-      UpgradeCode="2D596625-7AE8-4541-A7F2-21C286129C62">
+      UpgradeCode="9EC0C47A-9B1F-47AB-90AA-23CD251EB251">
 
     <MajorUpgrade
-        DowngradeErrorMessage="A newer version of TrailTag is already installed." />
+        DowngradeErrorMessage="A newer version of PhotoTrace is already installed." />
     <MediaTemplate EmbedCab="yes" CompressionLevel="mszip" />
-    <Launch Condition="VersionNT64" Message="TrailTag requires 64-bit Windows." />
+    <Launch Condition="VersionNT64" Message="PhotoTrace requires 64-bit Windows." />
 
     <StandardDirectory Id="ProgramFiles64Folder">
-      <Directory Id="INSTALLFOLDER" Name="TrailTag" />
+      <Directory Id="INSTALLFOLDER" Name="PhotoTrace" />
     </StandardDirectory>
 
     <Files Include="$(var.SourceDir)\**" Directory="INSTALLFOLDER">
-      <Exclude Files="$(var.SourceDir)\TrailTag.exe" />
+      <Exclude Files="$(var.SourceDir)\PhotoTrace.exe" />
     </Files>
 
     <Component Id="MainExecutable" Directory="INSTALLFOLDER">
       <File
-          Id="TrailTagExecutable"
-          Source="$(var.SourceDir)\TrailTag.exe"
+          Id="PhotoTraceExecutable"
+          Source="$(var.SourceDir)\PhotoTrace.exe"
           KeyPath="yes">
         <Shortcut
-            Id="TrailTagStartMenuShortcut"
+            Id="PhotoTraceStartMenuShortcut"
             Directory="ProgramMenuFolder"
             Advertise="yes"
-            Icon="TrailTag.exe"
+            Icon="PhotoTrace.exe"
             IconIndex="0"
-            Name="TrailTag"
+            Name="PhotoTrace"
             Description="Geotag photos from a GPX route"
             WorkingDirectory="INSTALLFOLDER">
-          <ShortcutProperty Key="System.AppUserModel.ID" Value="TrailTag.Desktop" />
+          <ShortcutProperty Key="System.AppUserModel.ID" Value="PhotoTrace.Desktop" />
         </Shortcut>
         <Shortcut
-            Id="TrailTagDesktopShortcut"
+            Id="PhotoTraceDesktopShortcut"
             Directory="DesktopFolder"
             Advertise="yes"
-            Icon="TrailTag.exe"
+            Icon="PhotoTrace.exe"
             IconIndex="0"
-            Name="TrailTag"
+            Name="PhotoTrace"
             Description="Geotag photos from a GPX route"
             WorkingDirectory="INSTALLFOLDER">
-          <ShortcutProperty Key="System.AppUserModel.ID" Value="TrailTag.Desktop" />
+          <ShortcutProperty Key="System.AppUserModel.ID" Value="PhotoTrace.Desktop" />
         </Shortcut>
       </File>
     </Component>
 
     <Icon
-        Id="TrailTag.exe"
-        SourceFile="$(var.SourceDir)\TrailTag.exe" />
-    <Property Id="ARPPRODUCTICON" Value="TrailTag.exe" />
+        Id="PhotoTrace.exe"
+        SourceFile="$(var.SourceDir)\PhotoTrace.exe" />
+    <Property Id="ARPPRODUCTICON" Value="PhotoTrace.exe" />
     <Property Id="ARPCOMMENTS" Value="Geotag photos from a recorded GPX route." />
-    <UIRef Id="TrailTagUI" />
+    <UIRef Id="PhotoTraceUI" />
   </Package>
 </Wix>

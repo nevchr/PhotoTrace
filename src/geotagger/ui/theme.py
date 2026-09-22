@@ -33,13 +33,13 @@ THEMES = {
 def theme_colors(mode: str | None = None) -> dict[str, str]:
     if mode is None:
         app = QApplication.instance()
-        mode = app.property("trailtagTheme") if app else "light"
+        mode = app.property("phototraceTheme") if app else "light"
     return THEMES.get(mode, THEMES["light"])
 
 
 def apply_theme(app: QApplication, mode: str) -> None:
     colors = theme_colors(mode)
-    app.setProperty("trailtagTheme", mode)
+    app.setProperty("phototraceTheme", mode)
     app.styleHints().setColorScheme(
         Qt.ColorScheme.Dark if mode == "dark" else Qt.ColorScheme.Light
     )

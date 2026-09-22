@@ -8,10 +8,10 @@ $projectRoot = Split-Path -Parent $PSScriptRoot
 if (-not $InstallerPath) {
     $versionSource = Get-Content -LiteralPath (Join-Path $projectRoot "src\geotagger\version.py") -Raw
     if ($versionSource -notmatch '__version__ = "(\d+\.\d+\.\d+)"') {
-        throw "TrailTag's version could not be read."
+        throw "PhotoTrace's version could not be read."
     }
     $appVersion = $Matches[1]
-    $InstallerPath = Join-Path $projectRoot "dist\TrailTag-Setup-$appVersion-x64.msi"
+    $InstallerPath = Join-Path $projectRoot "dist\PhotoTrace-Setup-$appVersion-x64.msi"
 }
 $InstallerPath = (Resolve-Path -LiteralPath $InstallerPath).Path
 $qaRoot = Join-Path $projectRoot ("build\installer-qa-" + [guid]::NewGuid().ToString("N"))
@@ -35,31 +35,31 @@ $existingInstallations = Get-ItemProperty `
     'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\*', `
     'HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\*', `
     'HKLM:\Software\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*' `
-    -ErrorAction SilentlyContinue | Where-Object DisplayName -eq 'TrailTag'
+    -ErrorAction SilentlyContinue | Where-Object DisplayName -eq 'PhotoTrace'
 if ($existingInstallations) {
-    throw "TrailTag is already installed. This test will not replace or uninstall an existing installation."
+    throw "PhotoTrace is already installed. This test will not replace or uninstall an existing installation."
 }
 foreach ($candidateDirectory in @(
-    (Join-Path $env:LOCALAPPDATA "Programs\TrailTag"),
-    (Join-Path $env:ProgramFiles "TrailTag")
+    (Join-Path $env:LOCALAPPDATA "Programs\PhotoTrace"),
+    (Join-Path $env:ProgramFiles "PhotoTrace")
 )) {
     if (Test-Path -LiteralPath $candidateDirectory) {
         throw "An existing app folder was found at $candidateDirectory. The test will not replace it."
     }
 }
 
-$tripPath = Join-Path $env:LOCALAPPDATA "TrailTag\trips.json"
+$tripPath = Join-Path $env:LOCALAPPDATA "PhotoTrace\outings.json"
 $originalTripHash = if (Test-Path -LiteralPath $tripPath) {
     (Get-FileHash -LiteralPath $tripPath -Algorithm SHA256).Hash
 } else { $null }
-$shortcutPath = Join-Path $env:APPDATA "Microsoft\Windows\Start Menu\Programs\TrailTag.lnk"
+$shortcutPath = Join-Path $env:APPDATA "Microsoft\Windows\Start Menu\Programs\PhotoTrace.lnk"
 $desktopFolder = (New-Object -ComObject WScript.Shell).SpecialFolders.Item("Desktop")
-$desktopShortcutPath = Join-Path $desktopFolder "TrailTag.lnk"
+$desktopShortcutPath = Join-Path $desktopFolder "PhotoTrace.lnk"
 if (Test-Path -LiteralPath $shortcutPath) {
-    throw "An existing TrailTag shortcut was found. The installer test will not replace it."
+    throw "An existing PhotoTrace shortcut was found. The installer test will not replace it."
 }
 if (Test-Path -LiteralPath $desktopShortcutPath) {
-    throw "An existing TrailTag desktop shortcut was found. The installer test will not replace it."
+    throw "An existing PhotoTrace desktop shortcut was found. The installer test will not replace it."
 }
 
 function Invoke-Msi([string[]]$MsiArguments, [string]$LogName) {
@@ -86,7 +86,7 @@ try {
     $installationAttempted = $true
     Invoke-Msi @('/i', ('"' + $InstallerPath + '"')) "install.log"
     if ($windowsInstaller.ProductState($productCode) -ne 5) {
-        throw "Windows did not register the installed TrailTag product."
+        throw "Windows did not register the installed PhotoTrace product."
     }
     if (-not (Test-Path -LiteralPath $shortcutPath)) {
         throw "The installer did not create the Start menu shortcut."
@@ -103,7 +103,7 @@ try {
     $componentView.Close()
     $installedExecutable = $windowsInstaller.ComponentPath($productCode, $componentId)
     if (-not (Test-Path -LiteralPath $installedExecutable)) {
-        throw "The installed TrailTag executable was not found."
+        throw "The installed PhotoTrace executable was not found."
     }
     Write-Host "Installed to: $installedExecutable"
     $installedDirectory = Split-Path -Parent $installedExecutable
@@ -131,7 +131,7 @@ try {
     }
     $smokeProcess.Refresh()
     if ($smokeProcess.ExitCode -ne 0 -or (Get-Content -LiteralPath $smokePath -Raw) -ne "passed") {
-        throw "The installed TrailTag app failed its startup test."
+        throw "The installed PhotoTrace app failed its startup test."
     }
 
     Invoke-Msi @('/fa', $productCode) "repair.log"

@@ -63,7 +63,7 @@ def show_fullscreen_map(
     track_points: list[TrackPoint],
     preview_results: list[PreviewResult],
     *,
-    title: str = "TrailTag map",
+    title: str = "PhotoTrace map",
 ) -> None:
     dialog = FullscreenMapDialog(
         parent,
@@ -85,7 +85,7 @@ class MapView(QWebEngineView):
         self.popup_cache: dict[int, str] = {}
         self.pending_photo_index: int | None = None
         self.page_ready = False
-        self.theme_mode = QApplication.instance().property("trailtagTheme") or "light"
+        self.theme_mode = QApplication.instance().property("phototraceTheme") or "light"
 
         # A channel sends clicks without navigating away from the map. Rejected
         # custom-URL navigations can emit loadFinished(False) and disable previews.
@@ -102,7 +102,7 @@ class MapView(QWebEngineView):
         self._apply_map_theme()
 
     def _set_themed_html(self, page: str) -> None:
-        style = f'<style id="trailtag-theme">{map_stylesheet(self.theme_mode)}</style>'
+        style = f'<style id="phototrace-theme">{map_stylesheet(self.theme_mode)}</style>'
         self.setHtml(page.replace("</head>", style + "</head>"))
 
     def _apply_map_theme(self) -> None:
@@ -110,10 +110,10 @@ class MapView(QWebEngineView):
         self.page().runJavaScript(f"""
             (() => {{
                 if (!document.head) return;
-                let style = document.getElementById('trailtag-theme');
+                let style = document.getElementById('phototrace-theme');
                 if (!style) {{
                     style = document.createElement('style');
-                    style.id = 'trailtag-theme';
+                    style.id = 'phototrace-theme';
                     document.head.appendChild(style);
                 }}
                 style.textContent = {css};

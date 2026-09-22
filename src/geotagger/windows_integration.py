@@ -3,7 +3,7 @@
 import sys
 
 
-APP_USER_MODEL_ID = "TrailTag.Desktop"
+APP_USER_MODEL_ID = "PhotoTrace.Desktop"
 
 
 def configure_windows_identity() -> None:

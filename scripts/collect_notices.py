@@ -20,11 +20,11 @@ def main() -> None:
     notices = args.app_directory / "Third-party notices"
     notices.mkdir(parents=True, exist_ok=True)
     summary = [
-        "TrailTag third-party software notices",
+        "PhotoTrace third-party software notices",
         "",
         "The following components retain their original licenses and copyrights.",
         "License files supplied by each installed package are preserved below.",
-        "These notices do not grant a separate license to TrailTag's own code.",
+        "These notices do not grant a separate license to PhotoTrace's own code.",
         "",
     ]
     for name in PACKAGES:
@@ -58,7 +58,7 @@ def main() -> None:
         "",
         "Online map: Leaflet 1.9.4, https://leafletjs.com/ (BSD-2-Clause).",
         "Map data: OpenStreetMap contributors, https://www.openstreetmap.org/copyright.",
-        "Leaflet and map tiles are fetched online and are not bundled in TrailTag.",
+        "Leaflet and map tiles are fetched online and are not bundled in PhotoTrace.",
     ])
     (notices / "README.txt").write_text("\n".join(summary) + "\n", encoding="utf-8")
 

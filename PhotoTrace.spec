@@ -4,14 +4,14 @@ from pathlib import Path
 project_root = Path(SPECPATH)
 
 analysis = Analysis(
-    [str(project_root / "trailtag.py")],
+    [str(project_root / "phototrace.py")],
     pathex=[str(project_root)],
     binaries=[],
     datas=[
         *[(str(path), "packaging") for path in (project_root / "packaging").glob("arrow-*.svg")],
         (str(project_root / "README.md"), "."),
         (
-            str(project_root / "packaging" / "trailtag.ico"),
+            str(project_root / "packaging" / "phototrace.ico"),
             "packaging",
         ),
     ],
@@ -25,7 +25,7 @@ analysis = Analysis(
 )
 
 # Codex's workspace runtime puts unrelated Poppler/libheif DLLs on PATH.
-# PyInstaller can otherwise mistake those for TrailTag dependencies; one of
+# PyInstaller can otherwise mistake those for PhotoTrace dependencies; one of
 # them has the same name as Windows' ICU library but an incompatible API.
 analysis.binaries = [
     entry
@@ -41,7 +41,7 @@ executable = EXE(
     analysis.scripts,
     [],
     exclude_binaries=True,
-    name="TrailTag",
+    name="PhotoTrace",
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
@@ -52,7 +52,7 @@ executable = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon=str(project_root / "packaging" / "trailtag.ico"),
+    icon=str(project_root / "packaging" / "phototrace.ico"),
     version=str(
         project_root
         / "packaging"
@@ -66,5 +66,5 @@ distribution = COLLECT(
     analysis.datas,
     strip=False,
     upx=False,
-    name="TrailTag",
+    name="PhotoTrace",
 )

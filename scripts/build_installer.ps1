@@ -10,14 +10,14 @@ $projectRoot = Split-Path -Parent $PSScriptRoot
 $buildRoot = Join-Path $projectRoot "build"
 $versionSource = Get-Content -LiteralPath (Join-Path $projectRoot "src\geotagger\version.py") -Raw
 if ($versionSource -notmatch '__version__ = "(\d+\.\d+\.\d+)"') {
-    throw "TrailTag's release version could not be read."
+    throw "PhotoTrace's release version could not be read."
 }
 $appVersion = $Matches[1]
-$portableArchive = Join-Path $projectRoot "dist\TrailTag-windows-x64.zip"
-$installerPath = Join-Path $projectRoot "dist\TrailTag-Setup-$appVersion-x64.msi"
+$portableArchive = Join-Path $projectRoot "dist\PhotoTrace-windows-x64.zip"
+$installerPath = Join-Path $projectRoot "dist\PhotoTrace-Setup-$appVersion-x64.msi"
 $installerHashPath = "$installerPath.sha256"
-$installerSource = Join-Path $projectRoot "packaging\TrailTag.wxs"
-$installerUiSource = Join-Path $projectRoot "packaging\TrailTagUI.wxs"
+$installerSource = Join-Path $projectRoot "packaging\PhotoTrace.wxs"
+$installerUiSource = Join-Path $projectRoot "packaging\PhotoTraceUI.wxs"
 $windowsBuildScript = Join-Path $PSScriptRoot "build_windows.ps1"
 $wixVersion = "5.0.2"
 $wixPackageHash = "F30EF0C74E2A986126539C5780BE93AC24E8136EAF723B1937B26272703AE173"
@@ -63,12 +63,12 @@ try {
         }
 
         if ($LASTEXITCODE -ne 0) {
-            throw "The portable TrailTag app could not be built."
+            throw "The portable PhotoTrace app could not be built."
         }
     }
 
     if (-not (Test-Path -LiteralPath $portableArchive)) {
-        throw "Build the portable TrailTag ZIP before creating the installer."
+        throw "Build the portable PhotoTrace ZIP before creating the installer."
     }
 
     if (-not (Test-Path -LiteralPath $wixPackagePath)) {
@@ -126,10 +126,10 @@ try {
         -LiteralPath $portableArchive `
         -DestinationPath $installerStageRoot
 
-    $payloadPath = Join-Path $installerStageRoot "TrailTag"
-    $payloadExecutable = Join-Path $payloadPath "TrailTag.exe"
+    $payloadPath = Join-Path $installerStageRoot "PhotoTrace"
+    $payloadExecutable = Join-Path $payloadPath "PhotoTrace.exe"
     if (-not (Test-Path -LiteralPath $payloadExecutable)) {
-        throw "The portable app did not contain TrailTag.exe."
+        throw "The portable app did not contain PhotoTrace.exe."
     }
 
     if (Test-Path -LiteralPath $installerPath) {
@@ -148,7 +148,7 @@ try {
         $installerUiSource
 
     if ($LASTEXITCODE -ne 0) {
-        throw "WiX could not create the TrailTag installer."
+        throw "WiX could not create the PhotoTrace installer."
     }
 
     $installerHash = (
@@ -160,7 +160,7 @@ try {
         -Encoding ascii
 
     Write-Host ""
-    Write-Host "TrailTag installer created:"
+    Write-Host "PhotoTrace installer created:"
     Write-Host $installerPath
 }
 finally {

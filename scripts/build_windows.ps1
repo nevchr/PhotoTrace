@@ -7,7 +7,7 @@ $ErrorActionPreference = "Stop"
 
 $projectRoot = Split-Path -Parent $PSScriptRoot
 $pythonPath = Join-Path $projectRoot ".venv\Scripts\python.exe"
-$specPath = Join-Path $projectRoot "TrailTag.spec"
+$specPath = Join-Path $projectRoot "PhotoTrace.spec"
 $iconScriptPath = Join-Path $projectRoot "scripts\create_app_icon.py"
 $buildRoot = Join-Path $projectRoot "build"
 $packageStageRoot = Join-Path `
@@ -16,13 +16,13 @@ $packageStageRoot = Join-Path `
 $pytestTempPath = Join-Path `
     $buildRoot `
     ("pytest-" + [guid]::NewGuid().ToString("N"))
-$distributionPath = Join-Path $packageStageRoot "TrailTag"
-$executablePath = Join-Path $distributionPath "TrailTag.exe"
-$smokeStatusPath = Join-Path $packageStageRoot "TrailTag-smoke-test.txt"
-$archivePath = Join-Path $projectRoot "dist\TrailTag-windows-x64.zip"
+$distributionPath = Join-Path $packageStageRoot "PhotoTrace"
+$executablePath = Join-Path $distributionPath "PhotoTrace.exe"
+$smokeStatusPath = Join-Path $packageStageRoot "PhotoTrace-smoke-test.txt"
+$archivePath = Join-Path $projectRoot "dist\PhotoTrace-windows-x64.zip"
 
 if (-not (Test-Path -LiteralPath $pythonPath)) {
-    throw "TrailTag's virtual environment is missing. Create .venv first."
+    throw "PhotoTrace's virtual environment is missing. Create .venv first."
 }
 
 Push-Location $projectRoot
@@ -31,7 +31,7 @@ try {
     & $pythonPath $iconScriptPath
 
     if ($LASTEXITCODE -ne 0) {
-        throw "TrailTag's application icon could not be created."
+        throw "PhotoTrace's application icon could not be created."
     }
 
     if (-not $SkipTests) {
@@ -52,11 +52,11 @@ try {
         $specPath
 
     if ($LASTEXITCODE -ne 0) {
-        throw "PyInstaller failed to build TrailTag."
+        throw "PyInstaller failed to build PhotoTrace."
     }
 
     if (-not (Test-Path -LiteralPath $distributionPath)) {
-        throw "The TrailTag distribution folder was not created."
+        throw "The PhotoTrace distribution folder was not created."
     }
 
     & $pythonPath (Join-Path $PSScriptRoot "collect_notices.py") $distributionPath
@@ -76,12 +76,12 @@ try {
 
     if (-not $smokeProcess.WaitForExit(30000)) {
         Stop-Process -Id $smokeProcess.Id -Force
-        throw "The packaged TrailTag app did not finish its startup test."
+        throw "The packaged PhotoTrace app did not finish its startup test."
     }
 
     $smokeProcess.Refresh()
     if ($smokeProcess.ExitCode -ne 0) {
-        throw "The packaged TrailTag app failed its startup test."
+        throw "The packaged PhotoTrace app failed its startup test."
     }
 
     $smokeStatus = if (Test-Path -LiteralPath $smokeStatusPath) {
@@ -89,7 +89,7 @@ try {
     }
 
     if ($smokeStatus -ne "passed") {
-        throw "The packaged TrailTag window did not initialize correctly."
+        throw "The packaged PhotoTrace window did not initialize correctly."
     }
 
     Remove-Item -LiteralPath $smokeStatusPath -Force
@@ -112,7 +112,7 @@ try {
         -Encoding ascii
 
     Write-Host ""
-    Write-Host "TrailTag package created:"
+    Write-Host "PhotoTrace package created:"
     Write-Host $archivePath
 }
 finally {

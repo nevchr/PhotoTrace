@@ -1,4 +1,4 @@
-"""PyInstaller-friendly entry point for TrailTag."""
+"""PyInstaller-friendly entry point for PhotoTrace."""
 
 import os
 import sys
@@ -23,7 +23,7 @@ if SMOKE_TEST:
     SMOKE_STATUS_PATH = (
         Path(SMOKE_STATUS_ARGUMENT[len(SMOKE_STATUS_PREFIX):])
         if SMOKE_STATUS_ARGUMENT is not None
-        else Path(sys.executable).with_name("TrailTag-smoke-test.txt")
+        else Path(sys.executable).with_name("PhotoTrace-smoke-test.txt")
     )
     SMOKE_STATUS_PATH.write_text("launcher-started", encoding="utf-8")
 

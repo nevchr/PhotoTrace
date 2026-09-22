@@ -15,15 +15,15 @@ VSVersionInfo(
                 StringTable(
                     "040904B0",
                     [
-                        StringStruct("CompanyName", "TrailTag"),
+                        StringStruct("CompanyName", "PhotoTrace"),
                         StringStruct(
                             "FileDescription",
-                            "TrailTag GPX Photo Geotagger",
+                            "PhotoTrace GPX Photo Geotagger",
                         ),
                         StringStruct("FileVersion", "0.3.0"),
-                        StringStruct("InternalName", "TrailTag"),
-                        StringStruct("OriginalFilename", "TrailTag.exe"),
-                        StringStruct("ProductName", "TrailTag"),
+                        StringStruct("InternalName", "PhotoTrace"),
+                        StringStruct("OriginalFilename", "PhotoTrace.exe"),
+                        StringStruct("ProductName", "PhotoTrace"),
                         StringStruct("ProductVersion", "0.3.0"),
                     ],
                 )

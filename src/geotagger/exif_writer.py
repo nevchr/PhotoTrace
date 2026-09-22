@@ -63,7 +63,7 @@ def write_photo_gps(
         )
 
     temporary_path = output_path.with_name(
-        f".{output_path.name}.trailtag-{uuid4().hex}.tmp"
+        f".{output_path.name}.phototrace-{uuid4().hex}.tmp"
     )
 
     try:
@@ -123,7 +123,7 @@ def write_photo_gps(
         )
 
         # On Windows rename refuses to replace an existing destination. The
-        # caller also selects a free name, so previous TrailTag copies remain
+        # caller also selects a free name, so previous PhotoTrace copies remain
         # untouched.
         temporary_path.rename(output_path)
     finally:

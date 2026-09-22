@@ -180,7 +180,7 @@ def test_processing_keeps_an_existing_output_and_uses_a_numbered_name(tmp_path):
     source = source_folder / "photo.jpg"
     existing_output = output_folder / "photo.jpg"
     create_jpeg(source, "2026:01:01 10:00:15")
-    existing_output.write_bytes(b"previous TrailTag result")
+    existing_output.write_bytes(b"previous PhotoTrace result")
 
     preview = PreviewResult(
         source_path=source,
@@ -195,7 +195,7 @@ def test_processing_keeps_an_existing_output_and_uses_a_numbered_name(tmp_path):
 
     result = process_preview_results([preview], output_folder)[0]
 
-    assert existing_output.read_bytes() == b"previous TrailTag result"
+    assert existing_output.read_bytes() == b"previous PhotoTrace result"
     assert result.success is True
     assert result.output_path == output_folder / "photo (1).jpg"
     assert result.status == "Geotagged as photo (1).jpg"
