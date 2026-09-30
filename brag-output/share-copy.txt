@@ -1,0 +1,1 @@
+PhotoTrace puts trip photos back on the map, then makes geotagged copies while the originals stay untouched.
