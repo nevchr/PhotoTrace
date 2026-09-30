@@ -133,6 +133,10 @@ python -m pytest
 The tests use generated GPX and JPEG files. Personal photos and local test
 data are not read or uploaded.
 
+## Source prerequisites and scope
+
+Use Python 3.12+ on Windows x64 and install the pinned `requirements.txt` in a virtual environment using the source setup above. Tests generate their own GPX/JPEG fixtures. Geotagging runs locally; the map viewer needs internet for Leaflet and OpenStreetMap tiles. Source dependencies and packaging tools are separate from the self-contained published installer.
+
 ## Tech Stack
 
 - Python
